@@ -123,7 +123,7 @@ if (Serial.available()) { // Only do something if there's new data
 //light events control
 void controlLight(struct Lights& l, BS_LightEvent event) {
   CRGB colorWithoutDivider;
-  colorWithoutDivider.setRGB(event.color.r, event.color.b, event.color.g);
+  colorWithoutDivider.setRGB(event.color.r, event.color.g, event.color.b);
   //handle chroma
   if(IsChroma) {
     if(colorWithoutDivider.getAverageLight() != 0) {
