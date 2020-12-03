@@ -1,0 +1,6 @@
+﻿
+	<settings-container>
+		<bool-setting text='SerialOut' value='boolEnable'></bool-setting>
+		<dropdown-list-setting text='Port' value='ComPort' choices='list-options'></dropdown-list-setting>
+		<dropdown-list-setting text='Baudrate' value='baud-choice' choices='baud-options'></dropdown-list-setting>
+	</settings-container>
