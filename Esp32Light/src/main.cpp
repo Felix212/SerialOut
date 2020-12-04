@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <FastLED.h>
-#include <StringSplitter.h>
 #include <BS_LightToSerial.h>
 #include "main.hpp"
 
