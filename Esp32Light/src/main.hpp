@@ -2,31 +2,23 @@
 #include <FastLED.h>
 
 
-#define NUM_LEDS 50
+#define NUM_LEDS 150 //amount of leds. WS
+#define LEDTYPE WS2812B
+#define DATA_PIN 21 
 
-#define DATA_PIN 21
-
-#define BRIGHTNESS 255
-#define BRIGHTNESSDEVIDER 0.4
-
-#define L1_MIN 0
-#define L2_MIN 8
-#define L3_MIN 16
-#define L4_MIN 20
-#define L5_MIN 29
-#define L6_MIN 33
-#define L7_MIN 40
+#define BRIGHTNESS 130 //If you power your leds by the ESP32 directly, dont use anything higher than 130. 255 is maximum.
+#define BRIGHTNESSDEVIDER 0.4 //Flash events are 60% brighter than normal light on events
 
 
-
-
-#define L1_MAX L2_MIN
-#define L2_MAX L3_MIN
-#define L3_MAX L4_MIN
-#define L4_MAX L5_MIN
-#define L5_MAX L6_MIN
-#define L6_MAX L7_MIN
-#define L7_MAX 50
+// led strip is split into different sections. Check documention for more info
+#define LEDSTART 0 
+#define LEDSPLIT1 24
+#define LEDSPLIT2 48
+#define LEDSPLIT3 60
+#define LEDSPLIT4 87
+#define LEDSPLIT5 99
+#define LEDSPLIT6 120
+#define LEDEND 150
 
 
 //lighttypes
@@ -41,17 +33,19 @@
 //lightevents
 
 #define LIGHTOFF 0
-#define LEFTCOLORON 1
-#define LEFTCOLORFADE 2
-#define LEFTCOLORFLASH 3
-#define RIGHTCOLORON 5
-#define RIGHTCOLORFADE 6
-#define RIGHTCOLORFLASH 7
+#define RIGHTCOLORON 1
+#define RIGHTCOLORFLASH 2
+#define RIGHTCOLORFADE 3
+
+#define LEFTCOLORON 5
+#define LEFTCOLORFLASH 6
+#define LEFTCOLORFADE 7
+
 #define COLORONLY 10
 
 void controlLight(struct Lights& l, BS_LightEvent event);
-void fadeLight(struct Lights l, int);
-void fadeFlashLight(struct Lights l, int);
+void fadeLight(struct Lights& l);
+void fadeFlashLight(struct Lights& l);
 void ledwalkleft(struct Laser*, int*, int*);
 void ledwalkright(struct Laser*, int*, int*);
 
