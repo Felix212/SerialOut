@@ -1,24 +1,27 @@
 #pragma once
 #include <FastLED.h>
 
-
-#define NUM_LEDS 150 / 3 //amount of leds. WS
-#define LEDTYPE WS2812B
+//SETUP
+#define NUM_LEDS 150  //amount of leds
+#define LEDTYPE WS2812B 
 #define DATA_PIN 21 
+#define POWERLIMIT 4500 //in milliwatts 
 
-#define BRIGHTNESS 130 //If you power your leds by the ESP32 directly, dont use anything higher than 130. 255 is maximum.
-#define BRIGHTNESSDEVIDER 0.4 //Flash events are 60% brighter than normal light on events
-
-
-// led strip is split into different sections. Check documention for more info
+// led strip is split into different sections.
 #define LEDSTART 0 
-#define LEDSPLIT1 24 / 3 
-#define LEDSPLIT2 48 / 3 
-#define LEDSPLIT3 60 / 3 
-#define LEDSPLIT4 87 / 3 
-#define LEDSPLIT5 99 / 3 
-#define LEDSPLIT6 120 / 3 
-#define LEDEND 150 / 3 
+#define LEDSPLIT1 24 // RingLaser # LEDSTART --- LEDSPLIT1
+#define LEDSPLIT2 48 // LeftLaser # LEDSPLIT1 --- LEDSPLIT2
+#define LEDSPLIT3 60 // Centerlight # etc.
+#define LEDSPLIT4 87 // Backtoplight
+#define LEDSPLIT5 99 // Centerlight
+#define LEDSPLIT6 120 // RightLaser
+#define LEDEND 150 // RingLaser
+
+//SETUP END
+#define BRIGHTNESSDEVIDER 0.4 //Flash events are 60% brighter than normal light on events
+#define BRIGHTNESS 255 //If you power your leds by the ESP32 directly, dont use anything higher than 130. 255 is maximum.
+
+
 
 //lighttypes
 #define BACKTOPLASER 0

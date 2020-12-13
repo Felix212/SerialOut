@@ -7,11 +7,7 @@
 CRGB rightColor;
 CRGB leftColor;
 bool IsChroma = false;
-//CRGB leds[NUM_LEDS];
 CRGBArray<NUM_LEDS> leds;
-//CRGBSet partA(leds(6,9));
-
-
 struct Lights stripeControl[7];
 Laser leftLaser;
 Laser rightLaser;
@@ -25,15 +21,13 @@ void setup() {
   //setup serial
   Serial.begin(250000);
   int valuesMinMax[] = {LEDSTART, LEDSPLIT1, LEDSPLIT2, LEDSPLIT3, LEDSPLIT4, LEDSPLIT5, LEDSPLIT6, LEDEND};
-  for (size_t i = 0; i < 7; i++)
-  {
+  for (size_t i = 0; i < 7; i++) {
     stripeControl[i].MIN = valuesMinMax[i];
     stripeControl[i].MAX = valuesMinMax[i+1];
-    //stripeControl[i].lightcontroller = CRGBSet(leds(valuesMinMax[i], valuesMinMax[i+1]-1));
   }
   FastLED.addLeds<LEDTYPE, DATA_PIN, GRB>(leds, NUM_LEDS);
   FastLED.setBrightness(BRIGHTNESS);
-  //FastLED.setMaxRefreshRate(1200);
+  FastLED.setMaxPowerInMilliWatts(POWERLIMIT);
   for (size_t i = 0; i < NUM_LEDS; i++)
   {
     leds[i] = CRGB::Black;
@@ -54,18 +48,20 @@ void loop() {
 EVERY_N_MILLISECONDS(6) {
   for (int i = 0; i < 7; i++)
   {
-    if(stripeControl[i].status.FADE == 1) {
-      fadeLight(stripeControl[i]);
-    }
-    if(stripeControl[i].status.FLASH == 1) {
-      fadeFlashLight(stripeControl[i]);
+    if(stripeControl[i].status.FADE == 1 || stripeControl[i].status.FLASH == 1) {
+      if(stripeControl[i].status.FADE == 1) {
+        fadeLight(stripeControl[i]);
+      }
+      if(stripeControl[i].status.FLASH == 1) {
+        fadeFlashLight(stripeControl[i]);
+      }
     }
   }
+  //update all leds
   FastLED.show();
 }
 
 if (Serial.available()) { // Only do something if there's new data
-
     byte buf[2]; // Array for storing incoming data
     int index = 0; // How many bytes have been received
     while (index < 2 ){ // Wait until 2 bytes have been received
@@ -89,7 +85,7 @@ if (Serial.available()) { // Only do something if there's new data
       Serial.println("chroma disabled");
       return;
     }
-    
+    //get note colors
     if(event.type == LEFTCOLOR) {
       leftColor = CRGB(event.color.r, event.color.g, event.color.b);
       return;
@@ -104,28 +100,18 @@ if (Serial.available()) { // Only do something if there's new data
       {
       case BACKTOPLASER : 
         controlLight(stripeControl[3], event);
-        FastLED.show();
         break;
       case RINGLASER :
         controlLight(stripeControl[0], event);
-        leds(stripeControl[6].MIN,stripeControl[6].MAX-1).operator=(leds[stripeControl[0].MIN]);
-        stripeControl[6].color = stripeControl[0].color;
-        stripeControl[6].status = stripeControl[0].status;
-        //controlLight(stripeControl[6], event);
-        FastLED.show();
+        controlLight(stripeControl[6], event);
         break;
       case LEFTLASER : controlLight(stripeControl[1], event);
-        FastLED.show();
         break;
       case RIGHTLASER : controlLight(stripeControl[5], event);
-        FastLED.show();
         break;
       case CENTERLIGHT : 
         controlLight(stripeControl[2], event);
-        leds(stripeControl[4].MIN,stripeControl[4].MAX-1).operator=(leds[stripeControl[2].MIN]);
-        stripeControl[4].color = stripeControl[2].color;
-        stripeControl[4].status = stripeControl[2].status;
-        FastLED.show();
+        controlLight(stripeControl[4], event);
         break;
       case LEFTLASERSPEED : leftLaser.laserSpeed = event.value;
         break;
@@ -137,12 +123,11 @@ if (Serial.available()) { // Only do something if there's new data
       
   }
   //laser walkanimation
-  //ledwalkleft(&leftLaser, &stripeControl[leftLaser.index].MIN, &stripeControl[leftLaser.index].MAX);
-  //ledwalkright(&rightLaser, &stripeControl[rightLaser.index].MIN, &stripeControl[rightLaser.index].MAX);
+  ledwalkleft(&leftLaser, &stripeControl[leftLaser.index].MIN, &stripeControl[leftLaser.index].MAX);
+  ledwalkright(&rightLaser, &stripeControl[rightLaser.index].MIN, &stripeControl[rightLaser.index].MAX);
   
 }
 
-//read Serial jdxsu
 
 //light events control
 void controlLight(struct Lights& l, BS_LightEvent event) {
@@ -207,12 +192,9 @@ void controlLight(struct Lights& l, BS_LightEvent event) {
   if(l.status.ON == 1) {
       if(l.status.FLASH == 0) {
         leds(l.MIN, l.MAX-1) = l.color;
-        //leds[i] = l.color;
-
       } else {
         //take color without divider for flash
         leds(l.MIN, l.MAX-1) = colorWithoutDivider;
-        //leds[i] = colorWithoutDivider;
       }
   } else {
       leds(l.MIN, l.MAX-1) = CRGB::Black;
@@ -224,8 +206,6 @@ void fadeLight(struct Lights& l) {
   
     leds(l.MIN, l.MAX-1).fadeToBlackBy(1); 
     if(leds[l.MIN].getAverageLight() <= 0) {
-     // Serial.println(l.MIN);
-     // Serial.println(l.MAX);
       leds(l.MIN, l.MAX-1) = CRGB::Black;
       l.status.FADE = 0;
       l.status.ON = 0;
@@ -239,6 +219,8 @@ void fadeFlashLight(struct Lights& l) {
       leds(l.MIN, l.MAX-1) = l.color;
   }
 }
+
+//uhhhmmmm refactoring needed
 void ledwalkleft(struct Laser *laser, int *min, int *max) {
   if(*min + laser->laserIndex == *max) {
     laser->laserIndex = 0;
@@ -260,9 +242,7 @@ void ledwalkleft(struct Laser *laser, int *min, int *max) {
       bl.value = LIGHTOFF;
       controlLight(stripeControl[laser->index], bl);
     }
-    
     laser->laserIndex++;
-    FastLED.show();
     } 
   }
 void ledwalkright(struct Laser *laser, int *min, int *max) {
@@ -286,9 +266,7 @@ void ledwalkright(struct Laser *laser, int *min, int *max) {
       bl.value = LIGHTOFF;
       controlLight(stripeControl[laser->index], bl);
     }
-      
     laser->laserIndex++;
-    FastLED.show();
     } 
   }
 
