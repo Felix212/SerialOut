@@ -2,7 +2,7 @@
 #include <FastLED.h>
 
 
-#define NUM_LEDS 150 //amount of leds. WS
+#define NUM_LEDS 150 / 3 //amount of leds. WS
 #define LEDTYPE WS2812B
 #define DATA_PIN 21 
 
@@ -12,14 +12,13 @@
 
 // led strip is split into different sections. Check documention for more info
 #define LEDSTART 0 
-#define LEDSPLIT1 24
-#define LEDSPLIT2 48
-#define LEDSPLIT3 60
-#define LEDSPLIT4 87
-#define LEDSPLIT5 99
-#define LEDSPLIT6 120
-#define LEDEND 150
-
+#define LEDSPLIT1 24 / 3 
+#define LEDSPLIT2 48 / 3 
+#define LEDSPLIT3 60 / 3 
+#define LEDSPLIT4 87 / 3 
+#define LEDSPLIT5 99 / 3 
+#define LEDSPLIT6 120 / 3 
+#define LEDEND 150 / 3 
 
 //lighttypes
 #define BACKTOPLASER 0
@@ -43,19 +42,27 @@
 
 #define COLORONLY 10
 
+#define CHROMAEVENT 255
+#define RIGHTCOLOR 254
+#define LEFTCOLOR 253
+#define SETUPEVENTS 253
+
 void controlLight(struct Lights& l, BS_LightEvent event);
 void fadeLight(struct Lights& l);
 void fadeFlashLight(struct Lights& l);
 void ledwalkleft(struct Laser*, int*, int*);
 void ledwalkright(struct Laser*, int*, int*);
 
-
-struct Lights {
+struct Status {
   int FADE = 0;
   int FLASH = 0;
+  int ON = 0;
+};
+struct Lights {
+  struct Status status;
   int MIN;
   int MAX;
-  int ON = 0;
+
   CRGB color;
 };
 struct Laser {
