@@ -8,7 +8,6 @@ using SerialOutNew.Configuration;
 using CustomJSONData;
 using CustomJSONData.CustomBeatmap;
 using SongCore.Utilities;
-
 namespace SerialOutNew
 {
 
@@ -24,8 +23,11 @@ namespace SerialOutNew
         private SerialPort port = new SerialPort(SerialConfig.instance.ComPort, SerialConfig.instance.baudChoice, Parity.None, 8, StopBits.One);
         private const int CHROMATYPE = 255;
         private const int COLOR_ONLY_VALUE = 10;
+        private const int LEFTCOLOR = 253;
+        private const int RIGHTCOLOR = 254;
         public static SerialOutNewController instance { get; private set; }
         private BeatmapObjectCallbackController Ec;
+        ColorManager cm;
         internal const int RGB_INT_OFFSET = 2000000000;
         List<int> _lightTypes = new List<int> { 0, 1, 2, 3, 4, 12, 13 };
         #region Monobehaviour Messages
@@ -39,17 +41,19 @@ namespace SerialOutNew
             port.Open();
             Logger.log.Info("Open Port");
             Ec = Resources.FindObjectsOfTypeAll<BeatmapObjectCallbackController>().FirstOrDefault();
-            
+
             StartCoroutine(GrabLight());
         }
         IEnumerator GrabLight()
         {
-            yield return new WaitUntil(() => Resources.FindObjectsOfTypeAll<BeatmapObjectCallbackController>().Any());
+            yield return new WaitUntil(() => Resources.FindObjectsOfTypeAll<BeatmapObjectCallbackController>().Any() && Resources.FindObjectsOfTypeAll<ColorManager>().Any());
             Ec = Resources.FindObjectsOfTypeAll<BeatmapObjectCallbackController>().FirstOrDefault();
             Logger.log.Info("Found LightController");
             Ec.beatmapEventDidTriggerEvent += EventHappened;
+            cm = Resources.FindObjectsOfTypeAll<ColorManager>().LastOrDefault();            
             var beatmap = SongCore.Collections.RetrieveDifficultyData(BS_Utils.Plugin.LevelData.GameplayCoreSceneSetupData.difficultyBeatmap)?.additionalDifficultyData;
             BeatmapData _beatmapData = Ec?.GetField<BeatmapData>("_beatmapData");
+            //Chroma setup
 
             if (beatmap == null)
             {
@@ -67,6 +71,17 @@ namespace SerialOutNew
                 Logger.log.Info("Disable Chroma");
                 port.Write(new byte[] { (byte)CHROMATYPE, (byte)0 }, 0, 2);
             }
+            //Color setup
+            Color32? left = cm.ColorForType(ColorType.ColorA);
+            Color32? right = cm.ColorForType(ColorType.ColorB);
+            int onebyteleft = ((left.Value.r / 32) << 5) + ((left.Value.g / 32) << 2) + (left.Value.b / 64);
+            int onebyteright = ((right.Value.r / 32) << 5) + ((right.Value.g / 32) << 2) + (right.Value.b / 64);
+            port.Write(new byte[] {LEFTCOLOR, (byte)onebyteleft}, 0, 2);
+            port.Write(new byte[] { RIGHTCOLOR, (byte)onebyteright }, 0, 2);
+            Logger.log.Info(right.ToString());
+            Logger.log.Info(left.ToString());
+
+
         }
         /// <summary>
         /// Only ever called once on the first frame the script is Enabled. Start is called after any other script's Awake() and before Update().
@@ -136,6 +151,10 @@ namespace SerialOutNew
             else
             {
                 //save event + value as one byte
+                if(value > 15)
+                {
+                    Event = 15;
+                }
                 light = (Event << 4) + value;
             }
             if (_lightTypes.Contains(Event))
@@ -161,7 +180,7 @@ namespace SerialOutNew
                     }
                     Logger.log.Debug(Event.ToString() + " // " + value.ToString() + " // " + color.ToString());
                 }
-                port.Write(new byte[] {(byte)light, (byte) color}, 0, 2); 
+                port.Write(new byte[] {(byte)light, (byte) color}, 0, 2);
             }
         }
 
