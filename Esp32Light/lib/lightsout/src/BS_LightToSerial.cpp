@@ -12,7 +12,7 @@ BS_LightToSerial::BS_LightToSerial()
 BS_LightEvent BS_LightToSerial::ParseMessage(byte msg[])
 {	BS_LightEvent message;
 	 //= (BS_LightEvent){msg[0], msg[1], msg[2]};
-	if(msg[0] < 253) {
+	if(msg[0] < 252) {
 		message.type = (msg[0] >> 4);
 		message.value = (msg[0] & 15);
 		if(msg[1] != 0) {

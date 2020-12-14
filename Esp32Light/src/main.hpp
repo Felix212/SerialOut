@@ -48,7 +48,8 @@
 #define CHROMAEVENT 255
 #define RIGHTCOLOR 254
 #define LEFTCOLOR 253
-#define SETUPEVENTS 253
+#define TURNOFFLIGHTS 252
+#define SETUPEVENTS 251
 
 void controlLight(struct Lights& l, BS_LightEvent event);
 void fadeLight(struct Lights& l);

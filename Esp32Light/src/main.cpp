@@ -94,6 +94,10 @@ if (Serial.available()) { // Only do something if there's new data
       rightColor = CRGB(event.color.r, event.color.g, event.color.b);
       return;
     }
+    //reset lights
+    if(event.type == TURNOFFLIGHTS) {
+      leds(0, LEDEND-1) = CRGB::Black;
+    }
 
     // stripe is split into 7 different sections. Change sections depending on eventtype
     switch (event.type)

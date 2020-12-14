@@ -23,6 +23,7 @@ namespace SerialOutNew
         private SerialPort port = new SerialPort(SerialConfig.instance.ComPort, SerialConfig.instance.baudChoice, Parity.None, 8, StopBits.One);
         private const int CHROMATYPE = 255;
         private const int COLOR_ONLY_VALUE = 10;
+        private const int TURNOFFALLLIGHTS = 252;
         private const int LEFTCOLOR = 253;
         private const int RIGHTCOLOR = 254;
         public static SerialOutNewController instance { get; private set; }
@@ -46,11 +47,16 @@ namespace SerialOutNew
         }
         IEnumerator GrabLight()
         {
-            yield return new WaitUntil(() => Resources.FindObjectsOfTypeAll<BeatmapObjectCallbackController>().Any() && Resources.FindObjectsOfTypeAll<ColorManager>().Any());
+            yield return new WaitUntil(() => Resources.FindObjectsOfTypeAll<BeatmapObjectCallbackController>().Any() && Resources.FindObjectsOfTypeAll<ColorManager>().Any() && Resources.FindObjectsOfTypeAll<ColorSchemeSO>().Any());
             Ec = Resources.FindObjectsOfTypeAll<BeatmapObjectCallbackController>().FirstOrDefault();
             Logger.log.Info("Found LightController");
             Ec.beatmapEventDidTriggerEvent += EventHappened;
-            cm = Resources.FindObjectsOfTypeAll<ColorManager>().LastOrDefault();            
+            cm = Resources.FindObjectsOfTypeAll<ColorManager>().LastOrDefault();
+            ColorScheme ColorScheme = cm.GetField<ColorScheme>("_colorScheme");
+            Logger.log.Info(ColorScheme.colorSchemeName.ToString());
+            Logger.log.Info("Sending environment colors");
+            Logger.log.Info(((Color32)ColorScheme.environmentColor0).ToString());
+            Logger.log.Info(((Color32) ColorScheme.environmentColor1).ToString());
             var beatmap = SongCore.Collections.RetrieveDifficultyData(BS_Utils.Plugin.LevelData.GameplayCoreSceneSetupData.difficultyBeatmap)?.additionalDifficultyData;
             BeatmapData _beatmapData = Ec?.GetField<BeatmapData>("_beatmapData");
             //Chroma setup
@@ -72,16 +78,15 @@ namespace SerialOutNew
                 port.Write(new byte[] { (byte)CHROMATYPE, (byte)0 }, 0, 2);
             }
             //Color setup
-            Color32? left = cm.ColorForType(ColorType.ColorA);
-            Color32? right = cm.ColorForType(ColorType.ColorB);
+            Color32? left = ColorScheme.environmentColor0;
+            Color32? right = ColorScheme.environmentColor1;
             int onebyteleft = ((left.Value.r / 32) << 5) + ((left.Value.g / 32) << 2) + (left.Value.b / 64);
             int onebyteright = ((right.Value.r / 32) << 5) + ((right.Value.g / 32) << 2) + (right.Value.b / 64);
             port.Write(new byte[] {LEFTCOLOR, (byte)onebyteleft}, 0, 2);
             port.Write(new byte[] { RIGHTCOLOR, (byte)onebyteright }, 0, 2);
             Logger.log.Info(right.ToString());
             Logger.log.Info(left.ToString());
-
-
+            port.Write(new byte[] { TURNOFFALLLIGHTS, 0 }, 0, 2);
         }
         /// <summary>
         /// Only ever called once on the first frame the script is Enabled. Start is called after any other script's Awake() and before Update().
@@ -122,6 +127,7 @@ namespace SerialOutNew
         /// </summary>
         private void OnDisable()
         {
+            port.Write(new byte[] { TURNOFFALLLIGHTS, 0 }, 0, 2);
             Logger.log.Info("Port closed");
             port.Close();
         }
