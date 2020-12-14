@@ -28,15 +28,24 @@ void setup() {
   FastLED.addLeds<LEDTYPE, DATA_PIN, GRB>(leds, NUM_LEDS);
   FastLED.setBrightness(BRIGHTNESS);
   FastLED.setMaxPowerInMilliWatts(POWERLIMIT);
-  for (size_t i = 0; i < NUM_LEDS; i++)
-  {
-    leds[i] = CRGB::Black;
-  }
+  //Led check
+  leds(0,LEDEND-1) = CRGB::Black;
+  FastLED.show();
+  leds(0,LEDEND-1) = CRGB::Red;
+  FastLED.show();
+  delay(500);
+  leds(0,LEDEND-1) = CRGB::Green;
+  FastLED.show();
+  delay(500);
+  leds(0,LEDEND-1) = CRGB::Blue;
+  FastLED.show();
+  delay(500);
+  leds(0,LEDEND-1) = CRGB::Black;
+
   FastLED.show();
   leftLaser.index = 1;
   rightLaser.index = 5;
   
-  delay(100);
 }
 
 
@@ -230,8 +239,8 @@ void ledwalkleft(struct Laser *laser, int *min, int *max) {
     laser->laserIndex = 0;
     laser->toggle = !laser->toggle;
     }
-  EVERY_N_MILLISECONDS_I(thistimer, 200 / laser->laserSpeed) {
-  thistimer.setPeriod(200 - (laser->laserSpeed * 10));
+  EVERY_N_MILLISECONDS_I(thistimer, 151 / laser->laserSpeed) {
+  thistimer.setPeriod(151 - (laser->laserSpeed * 10));
     if(stripeControl[laser->index].status.ON == 1) {
       if(laser->toggle) {
       leds[*min + laser->laserIndex] = CRGB::Black;
@@ -254,8 +263,8 @@ void ledwalkright(struct Laser *laser, int *min, int *max) {
     laser->laserIndex = 0;
     laser->toggle = !laser->toggle;
     }
-  EVERY_N_MILLISECONDS_I(thistimer, 200 / laser->laserSpeed) {
-    thistimer.setPeriod(200 - (laser->laserSpeed * 10));
+  EVERY_N_MILLISECONDS_I(thistimer, 151 / laser->laserSpeed) {
+    thistimer.setPeriod(151 - (laser->laserSpeed * 10));
     if(stripeControl[laser->index].status.ON == 1) {
       if(laser->toggle) {
         leds[*max - laser->laserIndex] = CRGB::Black;

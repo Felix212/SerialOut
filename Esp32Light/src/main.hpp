@@ -4,8 +4,8 @@
 //SETUP
 #define NUM_LEDS 150  //amount of leds
 #define LEDTYPE WS2812B 
-#define DATA_PIN 21 
-#define POWERLIMIT 4500 //in milliwatts 
+#define DATA_PIN 12 // GPIO pin
+#define POWERLIMIT 3500 //max usage of power in milliwatts 
 
 // led strip is split into different sections.
 #define LEDSTART 0 
