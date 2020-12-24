@@ -3,21 +3,31 @@
 
 //SETUP
 #define NUM_LEDS 150  //amount of leds
-#define LEDTYPE WS2812B 
-#define DATA_PIN 12 // GPIO pin
-#define POWERLIMIT 3500 //max usage of power in milliwatts 
+
+// If LEDTYPE is NEOPIXEL it is necessary to edit file main.cpp in line
+// FastLED.addLeds<LEDTYPE, DATA_PIN, GRB>(leds, NUM_LEDS);
+// with
+// FastLED.addLeds<LEDTYPE, DATA_PIN>(leds, NUM_LEDS);
+#define LEDTYPE NEOPIXEL 
+#define DATA_PIN 2 // GPIO pin
+#define POWERLIMIT -1 //max usage of power in milliwatts, -1 for ulimited
+#define BAUD_RATE 250000
+#define UPDATES_PER_SECOND 30
 
 // led strip is split into different sections.
 #define LEDSTART 0 
-#define LEDSPLIT1 24 // RingLaser # LEDSTART --- LEDSPLIT1
-#define LEDSPLIT2 48 // LeftLaser # LEDSPLIT1 --- LEDSPLIT2
-#define LEDSPLIT3 60 // Centerlight # etc.
-#define LEDSPLIT4 87 // Backtoplight
-#define LEDSPLIT5 99 // Centerlight
-#define LEDSPLIT6 120 // RightLaser
-#define LEDEND 150 // RingLaser
+#define LEDSPLIT1 17 // RingLaser # LEDSTART --- LEDSPLIT1
+#define LEDSPLIT2 34 // LeftLaser # LEDSPLIT1 --- LEDSPLIT2
+#define LEDSPLIT3 51 // Centerlight # etc.
+#define LEDSPLIT4 68 // Backtoplight
+#define LEDSPLIT5 85 // Centerlight
+#define LEDSPLIT6 102 // RightLaser
+#define LEDEND 120 // RingLaser
 
 //SETUP END
+
+#define TIME_BETWEEN_UPDATES (int) floor(1000 / UPDATES_PER_SECOND)
+
 #define BRIGHTNESSDEVIDER 0.4 //Flash events are 60% brighter than normal light on events
 #define BRIGHTNESS 255 //If you power your leds by the ESP32 directly, dont use anything higher than 130. 255 is maximum.
 
@@ -51,6 +61,7 @@
 #define TURNOFFLIGHTS 252
 #define SETUPEVENTS 251
 
+void checkLeds();
 void controlLight(struct Lights& l, BS_LightEvent event);
 void fadeLight(struct Lights& l);
 void fadeFlashLight(struct Lights& l);
