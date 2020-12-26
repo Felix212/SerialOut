@@ -18,43 +18,37 @@ void setup() {
   rightColor.setRGB(0,125,255);
   leftColor.setRGB(255,0,0);
   delay(100);
+
   //setup serial
-  Serial.begin(250000);
+  Serial.begin(BAUD_RATE);
+  
   int valuesMinMax[] = {LEDSTART, LEDSPLIT1, LEDSPLIT2, LEDSPLIT3, LEDSPLIT4, LEDSPLIT5, LEDSPLIT6, LEDEND};
-  for (size_t i = 0; i < 7; i++) {
+  for (int i = 0; i < 7; i++) {
     stripeControl[i].MIN = valuesMinMax[i];
     stripeControl[i].MAX = valuesMinMax[i+1];
   }
-  FastLED.addLeds<LEDTYPE, DATA_PIN, GRB>(leds, NUM_LEDS);
-  FastLED.setBrightness(BRIGHTNESS);
-  FastLED.setMaxPowerInMilliWatts(POWERLIMIT);
-  //Led check
-  leds(0,LEDEND-1) = CRGB::Black;
-  FastLED.show();
-  leds(0,LEDEND-1) = CRGB::Red;
-  FastLED.show();
-  delay(500);
-  leds(0,LEDEND-1) = CRGB::Green;
-  FastLED.show();
-  delay(500);
-  leds(0,LEDEND-1) = CRGB::Blue;
-  FastLED.show();
-  delay(500);
-  leds(0,LEDEND-1) = CRGB::Black;
 
-  FastLED.show();
+  // FastLED.addLeds<LEDTYPE, DATA_PIN, GRB>(leds, NUM_LEDS);
+  FastLED.addLeds<LEDTYPE, DATA_PIN>(leds, NUM_LEDS);
+  
+  FastLED.setBrightness(BRIGHTNESS);
+  if (POWERLIMIT != -1){
+    FastLED.setMaxPowerInMilliWatts(POWERLIMIT);
+  }
+
+  checkLeds();
+
   leftLaser.index = 1;
   rightLaser.index = 5;
   
 }
-
 
 CRGB col;
 
 void loop() {
   /* */
 //Fade in progress?
-EVERY_N_MILLISECONDS(6) {
+EVERY_N_MILLISECONDS(TIME_BETWEEN_UPDATES) {
   for (int i = 0; i < 7; i++)
   {
     if(stripeControl[i].status.FADE == 1 || stripeControl[i].status.FLASH == 1) {
@@ -141,6 +135,23 @@ if (Serial.available()) { // Only do something if there's new data
   
 }
 
+// Checks leds by turning all them on with colors RED -> GREEN -> BLUE
+void checkLeds(){
+  //Led check
+  leds(0,LEDEND-1) = CRGB::Black;
+  FastLED.show();
+  leds(0,LEDEND-1) = CRGB::Red;
+  FastLED.show();
+  delay(500);
+  leds(0,LEDEND-1) = CRGB::Green;
+  FastLED.show();
+  delay(500);
+  leds(0,LEDEND-1) = CRGB::Blue;
+  FastLED.show();
+  delay(500);
+  leds(0,LEDEND-1) = CRGB::Black;
+  FastLED.show();
+}
 
 //light events control
 void controlLight(struct Lights& l, BS_LightEvent event) {
