@@ -55,8 +55,6 @@ namespace SerialOutNew
             ColorScheme ColorScheme = cm.GetField<ColorScheme>("_colorScheme");
             Logger.log.Info(ColorScheme.colorSchemeName.ToString());
             Logger.log.Info("Sending environment colors");
-            Logger.log.Info(((Color32)ColorScheme.environmentColor0).ToString());
-            Logger.log.Info(((Color32) ColorScheme.environmentColor1).ToString());
             var beatmap = SongCore.Collections.RetrieveDifficultyData(BS_Utils.Plugin.LevelData.GameplayCoreSceneSetupData.difficultyBeatmap)?.additionalDifficultyData;
             BeatmapData _beatmapData = Ec?.GetField<BeatmapData>("_beatmapData");
             //Chroma setup
