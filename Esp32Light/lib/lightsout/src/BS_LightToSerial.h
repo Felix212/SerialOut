@@ -1,8 +1,3 @@
-/*
-  Test.h - Test library for Wiring - description
-  Copyright (c) 2006 John Doe.  All right reserved.
-*/
-
 // ensure this library description is only included once
 #ifndef BS_LightToSerial_h
 #define BS_LightToSerial_h
@@ -11,17 +6,17 @@
 #define byte uint8_t
 struct color
 {
-  int r;
-  int g;
-  int b;
-};
-struct BS_LightEvent
-{
-  int type;
-  int value;
-  struct color color;
+  byte r;
+  byte g;
+  byte b;
 };
 
+struct BS_LightEvent
+{
+  byte type;
+  byte value;
+  struct color color;
+};
 
 // library interface description
 class BS_LightToSerial
@@ -35,14 +30,14 @@ public:
   byte bpm;
   enum LightEvents
   {
-    Off,
-    Blue,
-    BlueFlash,
-    BlueFade,
+    Light_Off,
+    Right_Color_On,
+    Right_Color_Flash,
+    Right_Color_Fade,
     Unused,
-    Red,
-    RedFlash,
-    RedFade
+    Left_Color_On,
+    Left_Color_Flash,
+    Left_Color_Fade,
   };
 };
 

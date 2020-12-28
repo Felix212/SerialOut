@@ -1,21 +1,19 @@
 #include "main.hpp"
 
 // global vars
-CRGB rightColor;
-CRGB leftColor;
+t_colors cached_colors;
+
 bool IsChroma = false;
+
 CRGBArray<NUM_LEDS> leds;
 struct Lights stripeControl[7];
 Laser leftLaser;
 Laser rightLaser;
 BS_LightToSerial bslts;
 
-
 void setup()
 {
-  rightColor.setRGB(0, 125, 255);
-  leftColor.setRGB(255, 0, 0);
-  delay(100);
+  cacheColors(bslts.left, bslts.right);
 
   //setup serial
   Serial.begin(BAUD_RATE);
@@ -42,7 +40,40 @@ void setup()
   rightLaser.index = 5;
 }
 
+void cacheColors(color left, color right)
+{
+  CRGB left_normal_color = CRGB((uint8_t)((float)left.r * BRIGHTNESSDIVIDER),
+                                (uint8_t)((float)left.g * BRIGHTNESSDIVIDER),
+                                (uint8_t)((float)left.b * BRIGHTNESSDIVIDER));
+  CRGB right_normal_color = CRGB((uint8_t)((float)right.r * BRIGHTNESSDIVIDER),
+                                 (uint8_t)((float)right.g * BRIGHTNESSDIVIDER),
+                                 (uint8_t)((float)right.b * BRIGHTNESSDIVIDER));
+
+  cached_colors.left = left;
+
+  cached_colors.right = right;
+
+  cached_colors.color_left_flash.setRGB(left.r,
+                                        left.g,
+                                        left.b);
+
+  cached_colors.color_right_flash.setRGB(right.r,
+                                         right.g,
+                                         right.b);
+
+  cached_colors.color_left.setRGB(left_normal_color.r,
+                                  left_normal_color.g,
+                                  left_normal_color.b);
+
+  cached_colors.color_right.setRGB(right_normal_color.r,
+                                   right_normal_color.g,
+                                   right_normal_color.b);
+}
+
 byte received_bytes_counter;
+// Array for storing incoming data
+byte buffer_data_input[2];
+
 void loop()
 {
   /* */
@@ -67,19 +98,18 @@ void loop()
   }
 
   if (Serial.available()) // Only do something if there's new data
-  {                
-    byte buf[2];   // Array for storing incoming data
+  {
     received_bytes_counter = 0; // How many bytes have been received
     while (received_bytes_counter < 2)
     { // Wait until 2 bytes have been received
       if (Serial.available())
       {
-        buf[received_bytes_counter] = Serial.read();
+        buffer_data_input[received_bytes_counter] = Serial.read();
         received_bytes_counter++;
       }
     }
 
-    BS_LightEvent event = bslts.ParseMessage(buf);
+    BS_LightEvent event = bslts.ParseMessage(buffer_data_input);
 
     if (event.type == CHROMAEVENT)
     {
@@ -105,12 +135,12 @@ void loop()
     //get note colors
     if (event.type == LEFTCOLOR)
     {
-      leftColor.setRGB(event.color.r, event.color.g, event.color.b);
+      cacheColors(event.color, cached_colors.right);
       return;
     }
     if (event.type == RIGHTCOLOR)
     {
-      rightColor.setRGB(event.color.r, event.color.g, event.color.b);
+      cacheColors(cached_colors.left, event.color);
       return;
     }
     //reset lights
@@ -151,8 +181,8 @@ void loop()
   }
 
   //laser walkanimation
-  ledwalkleft(&leftLaser, &stripeControl[leftLaser.index].MIN, &stripeControl[leftLaser.index].MAX);
-  ledwalkright(&rightLaser, &stripeControl[rightLaser.index].MIN, &stripeControl[rightLaser.index].MAX);
+  // ledwalkleft(&leftLaser, &stripeControl[leftLaser.index].MIN, &stripeControl[leftLaser.index].MAX);
+  // ledwalkright(&rightLaser, &stripeControl[rightLaser.index].MIN, &stripeControl[rightLaser.index].MAX);
 }
 
 // Checks leds by turning all them on with colors RED -> GREEN -> BLUE
@@ -175,77 +205,80 @@ void checkLeds()
 }
 
 //light events control
-CRGB colorWithoutDivider; // defined outside to not declare every event
+CRGB chromaColor; // defined outside to not declare every event
 
 void controlLight(struct Lights &l, BS_LightEvent event)
 {
-  colorWithoutDivider.setRGB(event.color.r, event.color.g, event.color.b);
+  if (DEBUG_MESSAGES)
+  {
+    Serial.println("Handling light");
+    Serial.println("Message Received:");
+    Serial.print("Type: ");
+    Serial.println(event.type);
+    Serial.print("Value: ");
+    Serial.println(event.value);
+    Serial.print("Color: ");
+    Serial.println("(" + String(event.color.r) + "," + String(event.color.g) + "," + String(event.color.b) + ")");
+    Serial.print("Current light color: ");
+    Serial.println("(" + String(l.color.r) + "," + String(l.color.g) + "," + String(l.color.b) + ")");
+  }
+
   //handle chroma
   if (IsChroma)
   {
-    if (colorWithoutDivider.getAverageLight() != 0)
+    chromaColor = CRGB(event.color.r,
+                       event.color.g,
+                       event.color.b);
+    if (chromaColor.getAverageLight() != 0)
     {
-      l.color.setRGB(colorWithoutDivider.r * BRIGHTNESSDEVIDER, 
-                     colorWithoutDivider.g * BRIGHTNESSDEVIDER, 
-                     colorWithoutDivider.b * BRIGHTNESSDEVIDER);
+      l.color_flash.setRGB(chromaColor.r,
+                           chromaColor.g,
+                           chromaColor.b);
+      l.color.setRGB((uint8_t)((float)chromaColor.r * BRIGHTNESSDIVIDER),
+                     (uint8_t)((float)chromaColor.g * BRIGHTNESSDIVIDER),
+                     (uint8_t)((float)chromaColor.b * BRIGHTNESSDIVIDER));
     }
   }
   //default colors
-  else if (event.value > 0 && event.value < 4)
+  else
   {
-    colorWithoutDivider.setRGB(rightColor.r, 
-                               rightColor.g, 
-                               rightColor.b);
-    l.color.setRGB(rightColor.r * BRIGHTNESSDEVIDER, 
-                   rightColor.g * BRIGHTNESSDEVIDER, 
-                   rightColor.b * BRIGHTNESSDEVIDER);
-  }
-  else if (event.value > 4 && event.value < 8)
-  {
-    colorWithoutDivider.setRGB(leftColor.r, 
-                               leftColor.g, 
-                               leftColor.b);
-    l.color.setRGB(leftColor.r * BRIGHTNESSDEVIDER, 
-                   leftColor.g * BRIGHTNESSDEVIDER, 
-                   leftColor.b * BRIGHTNESSDEVIDER);
+    if (event.value > 0 && event.value < 4)
+    {
+      l.color_flash = cached_colors.color_right_flash;
+      l.color = cached_colors.color_right;
+    }
+
+    if (event.value > 4 && event.value < 8)
+    {
+      l.color_flash = cached_colors.color_left_flash;
+      l.color = cached_colors.color_left;
+    }
   }
 
   switch (event.value)
   {
-  case LIGHTOFF:
+  case BS_LightToSerial::LightEvents::Light_Off:
     l.status.ON = 0;
     l.status.FLASH = 0;
     l.status.FADE = 0;
     break;
-  case LEFTCOLORON:
+  case BS_LightToSerial::LightEvents::Right_Color_On:
+  case BS_LightToSerial::LightEvents::Left_Color_On:
     l.status.ON = 1;
-    l.status.FLASH = 0;
     l.status.FADE = 0;
+    l.status.FLASH = 0;
     break;
-  case LEFTCOLORFADE:
+  case BS_LightToSerial::LightEvents::Right_Color_Flash:
+  case BS_LightToSerial::LightEvents::Left_Color_Flash:
+    l.status.ON = 1;
+    l.status.FADE = 0;
+    l.status.FLASH = 1;
+    break;
+  case BS_LightToSerial::LightEvents::Right_Color_Fade:
+  case BS_LightToSerial::LightEvents::Left_Color_Fade:
     l.status.ON = 1;
     l.status.FADE = 1;
     l.status.FLASH = 0;
-    break;
-  case LEFTCOLORFLASH:
-    l.status.ON = 1;
-    l.status.FLASH = 1;
-    l.status.FADE = 0;
-    break;
-  case RIGHTCOLORON:
-    l.status.ON = 1;
-    l.status.FLASH = 0;
-    l.status.FADE = 0;
-    break;
-  case RIGHTCOLORFADE:
-    l.status.ON = 1;
-    l.status.FADE = 1;
-    l.status.FLASH = 0;
-    break;
-  case RIGHTCOLORFLASH:
-    l.status.ON = 1;
-    l.status.FLASH = 1;
-    l.status.FADE = 0;
     break;
   default:
     break;
@@ -254,14 +287,14 @@ void controlLight(struct Lights &l, BS_LightEvent event)
   /* Updates LEDS color */
   if (l.status.ON == 1)
   {
-    if (l.status.FLASH == 0)
+    if (l.status.FLASH == 1)
     {
-      leds(l.MIN, l.MAX - 1) = l.color;
+      //take color without divider for flash
+      leds(l.MIN, l.MAX - 1) = l.color_flash;
     }
     else
     {
-      //take color without divider for flash
-      leds(l.MIN, l.MAX - 1) = colorWithoutDivider;
+      leds(l.MIN, l.MAX - 1) = l.color;
     }
   }
   else
@@ -322,7 +355,7 @@ void ledwalkleft(struct Laser *laser, int *min, int *max)
       bl.color.g = 0;
       bl.color.b = 0;
       bl.type = laser->index;
-      bl.value = LIGHTOFF;
+      bl.value = BS_LightToSerial::LightEvents::Light_Off;
       controlLight(stripeControl[laser->index], bl);
     }
     laser->laserIndex++;
@@ -356,7 +389,7 @@ void ledwalkright(struct Laser *laser, int *min, int *max)
       bl.color.g = 0;
       bl.color.b = 0;
       bl.type = laser->index;
-      bl.value = LIGHTOFF;
+      bl.value = BS_LightToSerial::LightEvents::Light_Off;
       controlLight(stripeControl[laser->index], bl);
     }
     laser->laserIndex++;
