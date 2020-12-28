@@ -318,8 +318,8 @@ void fadeLight(struct Lights &l)
 // fade until rgb value of  is reached
 void fadeFlashLight(struct Lights &l)
 {
-  leds(l.MIN, l.MAX - 1).subFromRGB(1);
-  if (leds[l.MIN] <= l.color)
+  leds(l.MIN, l.MAX - 1)--;
+  if (leds[l.MIN].getLuma() <= l.color.getLuma())
   {
     l.status.FLASH = 0;
     leds(l.MIN, l.MAX - 1) = l.color;
