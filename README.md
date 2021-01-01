@@ -11,6 +11,8 @@ Beat saber mod that sends light events to serialport. Events can be used by a co
 
 [Preview](https://www.youtube.com/watch?v=0ZJlF3XPXzM)
 
+[Data protocol for writing your own controller code](https://github.com/Felix212/SerialOut/wiki/Serial-Protocol)
+
 ## Special thanks to:
 
 
