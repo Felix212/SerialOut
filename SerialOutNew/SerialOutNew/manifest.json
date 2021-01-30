@@ -3,7 +3,7 @@
   "id": "SerialOutNew",
   "name": "SerialOutNew",
   "author": "Felix",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Send lightevents to serialport",
   "gameVersion": "1.13.0",
   "dependsOn": {
