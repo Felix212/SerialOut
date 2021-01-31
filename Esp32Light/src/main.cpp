@@ -1,397 +1,439 @@
 #include "main.hpp"
 
 // global vars
-t_colors cached_colors;
-int x = 1;
+t_cached_colors cached_colors;
+
 bool IsChroma = false;
 
-CRGBArray<NUM_LEDS> leds;
-struct Lights stripeControl[7];
-Laser leftLaser;
-Laser rightLaser;
-BS_LightToSerial bslts;
+CRGB leds[NUM_LEDS];
+CRGBArray<NUM_LEDS> support_array;
 
-void setup()
+t_light_controller stripeControl[7];
+
+t_laser leftLaser;
+t_laser rightLaser;
+
+LightToSerialParser *serialParser;
+
+uint32_t current_mills_cached;
+
+uint32_t frame_time_start_millis;
+uint32_t fade_time_start;
+
+uint32_t laser_left_timer_start;
+uint32_t laser_right_timer_start;
+uint32_t laser_left_time_update;
+uint32_t laser_right_time_update;
+
+//light events control
+CRGB chromaColor; // defined outside to not declare every event
+LightEvents current_event;
+t_light_controller *current_handler;
+
+void init_controllers()
 {
-  cacheColors(bslts.left, bslts.right);
-
-  //setup serial
-  Serial.begin(BAUD_RATE);
-
   int valuesMinMax[] = {LEDSTART, LEDSPLIT1, LEDSPLIT2, LEDSPLIT3, LEDSPLIT4, LEDSPLIT5, LEDSPLIT6, LEDEND};
   for (int i = 0; i < 7; i++)
   {
-    stripeControl[i].MIN = valuesMinMax[i];
-    stripeControl[i].MAX = valuesMinMax[i + 1];
+    stripeControl[i].from = valuesMinMax[i];
+    stripeControl[i].to = valuesMinMax[i + 1];
+    stripeControl[i].status.ON = 0;
+    stripeControl[i].status.FADE = 0;
+    stripeControl[i].status.FLASH = 0;
+    stripeControl[i].color = CRGB::Black;
+    stripeControl[i].color_flash = CRGB::Black;
+    stripeControl[i].actual_color = CRGB::Black;
   }
+}
+
+void setup()
+{
+
+  pinMode(PIN_LED_0, OUTPUT);
+  pinMode(PIN_LED_1, OUTPUT);
+  pinMode(PIN_LED_2, OUTPUT);
+  pinMode(PIN_LED_3, OUTPUT);
+  pinMode(PIN_LED_4, OUTPUT);
+
+  cacheColors(&defaultColorLEFT, &defaultColorRIGHT);
+
+  Serial.begin(BAUD_RATE);
+  serialParser = new LightToSerialParser();
+
+  init_controllers();
 
   // FastLED.addLeds<LEDTYPE, DATA_PIN, GRB>(leds, NUM_LEDS);
+
   FastLED.addLeds<LEDTYPE, DATA_PIN>(leds, NUM_LEDS);
 
   FastLED.setBrightness(BRIGHTNESS);
+
   if (POWERLIMIT != -1)
   {
     FastLED.setMaxPowerInMilliWatts(POWERLIMIT);
   }
 
-  checkLeds();
+  leftLaser.strip_part_index = 1;
+  rightLaser.strip_part_index = 5;
 
-  leftLaser.index = 1;
-  rightLaser.index = 5;
+  checkLeds(leds, 0, NUM_LEDS);
+
+  frame_time_start_millis = 0;
+  fade_time_start = 0;
+  laser_left_timer_start = 0;
+  laser_right_timer_start = 0;
+
+  laser_left_time_update = 151 / leftLaser.laserSpeed;
+  laser_right_time_update = 151 / rightLaser.laserSpeed;
 }
 
-void cacheColors(color left, color right)
+void cacheColors(CRGB *left, CRGB *right)
 {
-  CRGB left_normal_color = CRGB((uint8_t)((float)left.r * BRIGHTNESSDIVIDER),
-                                (uint8_t)((float)left.g * BRIGHTNESSDIVIDER),
-                                (uint8_t)((float)left.b * BRIGHTNESSDIVIDER));
-  CRGB right_normal_color = CRGB((uint8_t)((float)right.r * BRIGHTNESSDIVIDER),
-                                 (uint8_t)((float)right.g * BRIGHTNESSDIVIDER),
-                                 (uint8_t)((float)right.b * BRIGHTNESSDIVIDER));
+  cached_colors.color_left_flash = *left;
+  cached_colors.color_right_flash = *right;
 
-  cached_colors.left = left;
+  cached_colors.color_left = CRGB((uint8_t)((float)(*left).r * BRIGHTNESSDIVIDER),
+                                  (uint8_t)((float)(*left).g * BRIGHTNESSDIVIDER),
+                                  (uint8_t)((float)(*left).b * BRIGHTNESSDIVIDER));
 
-  cached_colors.right = right;
-
-  cached_colors.color_left_flash.setRGB(left.r,
-                                        left.g,
-                                        left.b);
-
-  cached_colors.color_right_flash.setRGB(right.r,
-                                         right.g,
-                                         right.b);
-
-  cached_colors.color_left.setRGB(left_normal_color.r,
-                                  left_normal_color.g,
-                                  left_normal_color.b);
-
-  cached_colors.color_right.setRGB(right_normal_color.r,
-                                   right_normal_color.g,
-                                   right_normal_color.b);
+  cached_colors.color_right = CRGB((uint8_t)((float)(*right).r * BRIGHTNESSDIVIDER),
+                                   (uint8_t)((float)(*right).g * BRIGHTNESSDIVIDER),
+                                   (uint8_t)((float)(*right).b * BRIGHTNESSDIVIDER));
 }
 
-byte received_bytes_counter;
-// Array for storing incoming data
-byte buffer_data_input[2];
+void show_frame()
+{
+  if (current_mills_cached - frame_time_start_millis > TIME_BETWEEN_UPDATES)
+  {
+    // Serial.println("Showing frame");
+    // update leds with current settings
+    update_leds(leds, support_array, 0, NUM_LEDS);
+
+    // Show updates
+    FastLED.show();
+    frame_time_start_millis = current_mills_cached;
+  }
+}
+
+void fade_leds()
+{
+  if (current_mills_cached - fade_time_start > FADE_TIME_MILLIS)
+  {
+    for (int i = 0; i < 7; ++i)
+    {
+      if (stripeControl[i].status.FLASH == 1)
+      {
+        fadeFlashLight(i);
+      }
+      else if (stripeControl[i].status.FADE == 1)
+      {
+        fadeLight(i);
+      }
+    }
+    fade_time_start = current_mills_cached;
+  }
+}
 
 void loop()
 {
-  /* */
-  //Fade in progress?
-  EVERY_N_MILLISECONDS(TIME_BETWEEN_UPDATES)
+  current_mills_cached = millis();
+
+  digitalWrite(PIN_LED_4, HIGH);
+  while (serialParser->dataAvailable()) // Only do something if there's new data
   {
-
-    for (int i = 0; i < 7; ++i)
-    {
-      if (stripeControl[i].status.FADE == 1)
-      {
-        fadeLight(stripeControl[i]);
-      }
-      if (stripeControl[i].status.FLASH == 1)
-      {
-        fadeFlashLight(stripeControl[i]);
-      }
-    }
-
-    //update all leds
-    FastLED.show();
+    serialParser->readData();
+    handleEvent();
   }
+  digitalWrite(PIN_LED_4, LOW);
 
-  if (Serial.available()) // Only do something if there's new data
-  {
-    received_bytes_counter = 0; // How many bytes have been received
-    while (received_bytes_counter < 2)
-    { // Wait until 2 bytes have been received
-      if (Serial.available())
-      {
-        buffer_data_input[received_bytes_counter] = Serial.read();
-        received_bytes_counter++;
-      }
-    }
-
-    BS_LightEvent event = bslts.ParseMessage(buffer_data_input);
-
-    if (event.type == CHROMAEVENT)
-    {
-      if (event.value == 1)
-      {
-        IsChroma = true;
-        if (DEBUG_MESSAGES)
-        {
-          Serial.println("chroma enabled");
-        }
-      }
-      else if (event.value == 0)
-      {
-        IsChroma = false;
-        if (DEBUG_MESSAGES)
-        {
-          Serial.println("chroma disabled");
-        }
-      }
-      return;
-    }
-
-    //get note colors
-    if (event.type == LEFTCOLOR)
-    {
-      cacheColors(event.color, cached_colors.right);
-      return;
-    }
-    if (event.type == RIGHTCOLOR)
-    {
-      cacheColors(cached_colors.left, event.color);
-      return;
-    }
-    //reset lights
-    if (event.type == TURNOFFLIGHTS)
-    {
-      leds(0, LEDEND - 1) = CRGB::Black;
-    }
-
-    // stripe is split into 7 different sections. Change sections depending on eventtype
-    switch (event.type)
-    {
-    case BACKTOPLASER:
-      controlLight(stripeControl[3], event);
-      break;
-    case RINGLASER:
-      controlLight(stripeControl[0], event);
-      controlLight(stripeControl[6], event);
-      break;
-    case LEFTLASER:
-      controlLight(stripeControl[1], event);
-      break;
-    case RIGHTLASER:
-      controlLight(stripeControl[5], event);
-      break;
-    case CENTERLIGHT:
-      controlLight(stripeControl[2], event);
-      controlLight(stripeControl[4], event);
-      break;
-    case LEFTLASERSPEED:
-      leftLaser.laserSpeed = event.value;
-      break;
-    case RIGHTLASERSPEED:
-      rightLaser.laserSpeed = event.value;
-      break;
-    default:
-      break;
-    }
-  }
+  fade_leds();
 
   //laser walkanimation
-  ledwalkleft(&leftLaser, &stripeControl[leftLaser.index].MIN, &stripeControl[leftLaser.index].MAX);
-  ledwalkright(&rightLaser, &stripeControl[rightLaser.index].MIN, &stripeControl[rightLaser.index].MAX);
+  ledwalkleft(&leftLaser, stripeControl[leftLaser.strip_part_index].from, stripeControl[leftLaser.strip_part_index].to);
+  ledwalkright(&rightLaser, stripeControl[rightLaser.strip_part_index].from, stripeControl[rightLaser.strip_part_index].to);
+
+  // coloring actual leds
+  show_frame();
 }
 
-// Checks leds by turning all them on with colors RED -> GREEN -> BLUE
-void checkLeds()
+void handleChromaEvent(byte val)
 {
-  //Led check
-  leds(0, LEDEND - 1) = CRGB::Black;
-  FastLED.show();
-  leds(0, LEDEND - 1) = CRGB::Red;
-  FastLED.show();
-  delay(500);
-  leds(0, LEDEND - 1) = CRGB::Green;
-  FastLED.show();
-  delay(500);
-  leds(0, LEDEND - 1) = CRGB::Blue;
-  FastLED.show();
-  delay(500);
-  leds(0, LEDEND - 1) = CRGB::Black;
-  FastLED.show();
+  if (val == 1)
+  {
+    IsChroma = true;
+    if (DEBUG_MESSAGES)
+    {
+      Serial.println(F("chroma enabled"));
+    }
+
+    else if (val == 0)
+    {
+      IsChroma = false;
+      if (DEBUG_MESSAGES)
+      {
+        Serial.println(F("chroma disabled"));
+      }
+    }
+  }
 }
 
-//light events control
-CRGB chromaColor; // defined outside to not declare every event
-
-void controlLight(struct Lights &l, BS_LightEvent event)
+void handleEvent()
 {
+  t_lightEvent *event = serialParser->parseMessage();
+
+  // stripe is split into 7 different sections. Change sections depending on eventtype
+  switch (event->type)
+  {
+  case BACKTOPLASER:
+    controlLight(3, event);
+    break;
+  case RINGLASER:
+    controlLight(0, event);
+    controlLight(6, event);
+    break;
+  case LEFTLASER:
+    controlLight(1, event);
+    break;
+  case RIGHTLASER:
+    controlLight(5, event);
+    break;
+  case CENTERLIGHT:
+    controlLight(2, event);
+    controlLight(4, event);
+    break;
+
+  // Configuration Events
+  case LEFTLASERSPEED:
+    leftLaser.laserSpeed = event->value;
+    laser_left_time_update = 151 / leftLaser.laserSpeed;
+    break;
+  case RIGHTLASERSPEED:
+    rightLaser.laserSpeed = event->value;
+    laser_right_time_update = 151 / rightLaser.laserSpeed;
+    break;
+  case TURNOFFLIGHTS:
+    support_array(0, LEDEND - 1) = CRGB::Black;
+    break;
+  case LEFTCOLOR:
+    cacheColors(&event->color, &cached_colors.color_right_flash);
+    break;
+  case RIGHTCOLOR:
+    cacheColors(&cached_colors.color_left_flash, &event->color);
+    break;
+  case CHROMAEVENT:
+    handleChromaEvent(event->value);
+    break;
+  default:
+    break;
+  }
+  // event handled
+  free(event);
+}
+
+void controlLight(int index, t_lightEvent *event)
+{
+  current_handler = &stripeControl[index];
+  current_event = (LightEvents)event->value;
+
   if (DEBUG_MESSAGES)
   {
-    Serial.println("Handling light");
-    Serial.println("Message Received:");
-    Serial.print("Type: ");
-    Serial.println(event.type);
-    Serial.print("Value: ");
-    Serial.println(event.value);
-    Serial.print("Color: ");
-    Serial.println("(" + String(event.color.r) + "," + String(event.color.g) + "," + String(event.color.b) + ")");
-    Serial.print("Current light color: ");
-    Serial.println("(" + String(l.color.r) + "," + String(l.color.g) + "," + String(l.color.b) + ")");
+    Serial.println(F("Handling light"));
+    Serial.println(F("Message Received:"));
+    Serial.print(F("Type: "));
+    Serial.println(event->type);
+    Serial.print(F("Value: "));
+    Serial.println(event->value);
+    Serial.print(F("Color: "));
+    Serial.println("(" + String(event->color.r) + "," + String(event->color.g) + "," + String(event->color.b) + ")");
+    Serial.print(F("Current light color: "));
+    Serial.println("(" + String(current_handler->color.r) + "," + String(current_handler->color.g) + "," + String(current_handler->color.b) + ")");
   }
 
   //handle chroma
   if (IsChroma)
   {
-    chromaColor = CRGB(event.color.r,
-                       event.color.g,
-                       event.color.b);
+    chromaColor = CRGB(event->color.r,
+                       event->color.g,
+                       event->color.b);
     if (chromaColor.getAverageLight() != 0)
     {
-      l.color_flash.setRGB(chromaColor.r,
-                           chromaColor.g,
-                           chromaColor.b);
-      l.color.setRGB((uint8_t)((float)chromaColor.r * BRIGHTNESSDIVIDER),
-                     (uint8_t)((float)chromaColor.g * BRIGHTNESSDIVIDER),
-                     (uint8_t)((float)chromaColor.b * BRIGHTNESSDIVIDER));
+      current_handler->color_flash.setRGB(chromaColor.r,
+                                          chromaColor.g,
+                                          chromaColor.b);
+      current_handler->color.setRGB((uint8_t)((float)chromaColor.r * BRIGHTNESSDIVIDER),
+                                    (uint8_t)((float)chromaColor.g * BRIGHTNESSDIVIDER),
+                                    (uint8_t)((float)chromaColor.b * BRIGHTNESSDIVIDER));
     }
   }
   //default colors
   else
   {
-    if (event.value > 0 && event.value < 4)
+    if (event->value > 0 && event->value < 4)
     {
-      l.color_flash = cached_colors.color_right_flash;
-      l.color = cached_colors.color_right;
+      current_handler->color_flash = cached_colors.color_right_flash;
+      current_handler->color = cached_colors.color_right;
     }
 
-    if (event.value > 4 && event.value < 8)
+    if (event->value > 4 && event->value < 8)
     {
-      l.color_flash = cached_colors.color_left_flash;
-      l.color = cached_colors.color_left;
+      current_handler->color_flash = cached_colors.color_left_flash;
+      current_handler->color = cached_colors.color_left;
     }
   }
 
-  switch (event.value)
+  switch (current_event)
   {
-  case BS_LightToSerial::LightEvents::Light_Off:
-    l.status.ON = 0;
-    l.status.FLASH = 0;
-    l.status.FADE = 0;
+  case LightEvents::Light_Off:
+    current_handler->status.ON = 0;
+    current_handler->status.FLASH = 0;
+    current_handler->status.FADE = 0;
     break;
-  case BS_LightToSerial::LightEvents::Right_Color_On:
-  case BS_LightToSerial::LightEvents::Left_Color_On:
-    l.status.ON = 1;
-    l.status.FADE = 0;
-    l.status.FLASH = 0;
+  case LightEvents::Right_Color_On:
+  case LightEvents::Left_Color_On:
+    current_handler->status.ON = 1;
+    current_handler->status.FADE = 0;
+    current_handler->status.FLASH = 0;
     break;
-  case BS_LightToSerial::LightEvents::Right_Color_Flash:
-  case BS_LightToSerial::LightEvents::Left_Color_Flash:
-    l.status.ON = 1;
-    l.status.FADE = 0;
-    l.status.FLASH = 1;
+  case LightEvents::Right_Color_Flash:
+  case LightEvents::Left_Color_Flash:
+    current_handler->status.ON = 1;
+    current_handler->status.FADE = 0;
+    current_handler->status.FLASH = 1;
     break;
-  case BS_LightToSerial::LightEvents::Right_Color_Fade:
-  case BS_LightToSerial::LightEvents::Left_Color_Fade:
-    l.status.ON = 1;
-    l.status.FADE = 1;
-    l.status.FLASH = 0;
+  case LightEvents::Right_Color_Fade:
+  case LightEvents::Left_Color_Fade:
+    current_handler->status.ON = 1;
+    current_handler->status.FADE = 1;
+    current_handler->status.FLASH = 0;
     break;
   default:
     break;
   }
 
   /* Updates LEDS color */
-  if (l.status.ON == 1)
+  if (current_handler->status.ON == 1)
   {
-    if (l.status.FLASH == 1)
+    if (current_handler->status.FLASH == 1)
     {
       //take color without divider for flash
-      leds(l.MIN, l.MAX - 1) = l.color_flash;
+      if (index != 1 && index != 5) // if not laser
+      {
+        support_array(current_handler->from, current_handler->to - 1) = current_handler->color_flash;
+      }
+      current_handler->actual_color = current_handler->color_flash;
     }
     else
     {
-      leds(l.MIN, l.MAX - 1) = l.color;
+      if (index != 1 && index != 5) // if not laser
+      {
+        support_array(current_handler->from, current_handler->to - 1) = current_handler->color;
+      }
+      current_handler->actual_color = current_handler->color;
     }
   }
   else
   {
-    leds(l.MIN, l.MAX - 1) = CRGB::Black;
+    support_array(current_handler->from, current_handler->to - 1) = CRGB::Black;
+    current_handler->actual_color = CRGB::Black;
   }
 }
 
 //fade function
-void fadeLight(struct Lights &l)
+void fadeLight(int index)
 {
-  leds(l.MIN, l.MAX - 1).fadeToBlackBy(1);
-  if (leds[l.MIN].getAverageLight() <= 0)
+  current_handler = &stripeControl[index];
+  current_handler->actual_color = current_handler->actual_color.fadeToBlackBy(1);
+
+  if (index != 1 && index != 5) // if not laser
   {
-    leds(l.MIN, l.MAX - 1) = CRGB::Black;
-    l.status.FADE = 0;
-    l.status.ON = 0;
+    support_array(current_handler->from, current_handler->to - 1) = current_handler->actual_color;
+  }
+
+  if (current_handler->actual_color.getAverageLight() < 10)
+  {
+    support_array(current_handler->from, current_handler->to - 1) = CRGB::Black;
+    current_handler->actual_color = CRGB::Black;
+    current_handler->status.FADE = 0;
+    current_handler->status.ON = 0;
   }
 }
 
 // fade until rgb value of  is reached
-void fadeFlashLight(struct Lights &l)
+void fadeFlashLight(int index)
 {
-  leds(l.MIN, l.MAX - 1)--;
-  if (leds[l.MIN].getLuma() <= l.color.getLuma())
+  current_handler = &stripeControl[index];
+  current_handler->actual_color = current_handler->actual_color.fadeToBlackBy(1);
+  if (index != 1 && index != 5) // if not laser
   {
-    l.status.FLASH = 0;
-    leds(l.MIN, l.MAX - 1) = l.color;
+    support_array(current_handler->from, current_handler->to - 1) = current_handler->actual_color;
+  }
+
+  if (current_handler->actual_color.getLuma() <= current_handler->color.getLuma())
+  {
+    if (index != 1 && index != 5) // if not laser
+    {
+      support_array(current_handler->from, current_handler->to - 1) = current_handler->color;
+    }
+    current_handler->actual_color = current_handler->color;
+    current_handler->status.FLASH = 0;
   }
 }
 
-//uhhhmmmm refactoring needed
-void ledwalkleft(struct Laser *laser, int *min, int *max)
+void ledwalkleft(struct Laser *laser, int from, int to)
 {
-  if (*min + laser->laserIndex == *max)
+
+  if (stripeControl[laser->strip_part_index].status.ON == 0)
+  {
+    return;
+  }
+
+  if (from + laser->laserIndex == to)
   {
     laser->laserIndex = 0;
     laser->toggle = !laser->toggle;
   }
-  EVERY_N_MILLISECONDS_I(thistimer, 151 / laser->laserSpeed)
+
+  if (current_mills_cached - laser_left_timer_start > laser_left_time_update)
   {
-    thistimer.setPeriod(151 - (laser->laserSpeed * 10));
-    if (stripeControl[laser->index].status.ON == 1)
+    if (laser->toggle)
     {
-      if (laser->toggle)
-      {
-        leds[*min + laser->laserIndex] = CRGB::Black;
-      }
-      else
-      {
-        leds[*min + laser->laserIndex] = stripeControl[laser->index].color;
-      }
+      support_array[from + laser->laserIndex] = CRGB::Black;
     }
     else
     {
-      BS_LightEvent bl;
-      bl.color.r = 0;
-      bl.color.g = 0;
-      bl.color.b = 0;
-      bl.type = laser->index;
-      bl.value = BS_LightToSerial::LightEvents::Light_Off;
-      controlLight(stripeControl[laser->index], bl);
+      support_array[from + laser->laserIndex] = stripeControl[laser->strip_part_index].actual_color;
     }
+
     laser->laserIndex++;
+    laser_left_timer_start = current_mills_cached;
   }
 }
-void ledwalkright(struct Laser *laser, int *min, int *max)
+
+void ledwalkright(struct Laser *laser, int from, int to)
 {
-  if (*max - laser->laserIndex == *min)
+  if (stripeControl[laser->strip_part_index].status.ON == 0)
+  {
+    return;
+  }
+
+  if (to - laser->laserIndex - 1 == from)
   {
     laser->laserIndex = 0;
     laser->toggle = !laser->toggle;
   }
-  EVERY_N_MILLISECONDS_I(thistimer, 151 / laser->laserSpeed)
+
+  if (current_mills_cached - laser_right_timer_start > laser_right_time_update)
   {
-    thistimer.setPeriod(151 - (laser->laserSpeed * 10));
-    if (stripeControl[laser->index].status.ON == 1)
+    if (laser->toggle)
     {
-      if (laser->toggle)
-      {
-        leds[*max - laser->laserIndex] = CRGB::Black;
-      }
-      else
-      {
-        leds[*max - laser->laserIndex] = stripeControl[laser->index].color;
-      }
+      support_array[to - laser->laserIndex - 1] = CRGB::Black;
     }
     else
     {
-      BS_LightEvent bl;
-      bl.color.r = 0;
-      bl.color.g = 0;
-      bl.color.b = 0;
-      bl.type = laser->index;
-      bl.value = BS_LightToSerial::LightEvents::Light_Off;
-      controlLight(stripeControl[laser->index], bl);
+      support_array[to - laser->laserIndex - 1] = stripeControl[laser->strip_part_index].actual_color;
     }
+
     laser->laserIndex++;
+    laser_right_timer_start = current_mills_cached;
   }
 }
