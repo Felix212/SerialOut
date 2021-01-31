@@ -2,7 +2,7 @@
 
 // global vars
 t_colors cached_colors;
-
+int x = 1;
 bool IsChroma = false;
 
 CRGBArray<NUM_LEDS> leds;
