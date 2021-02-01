@@ -2,18 +2,11 @@
 
 #include "Globals.hpp"
 
-typedef struct LightEvent
-{
-    byte type;
-    byte value;
-    CRGB color;
-} t_lightEvent;
-
 typedef struct StatusLight
 {
-    byte FADE = 0;
-    byte FLASH = 0;
-    byte ON = 0;
+    int FADE = 0;
+    int FLASH = 0;
+    int ON = 0;
 } t_status;
 
 typedef struct LightController
