@@ -4,10 +4,10 @@
 #include "FastLED.h"
 
 // ------------------------------------------------------ Pins ------------------------------------------------------ //
-#define PIN_LED_STRIP_1 52
-#define TOTAL_LEDS_STRIP_1 30
-#define PIN_LED_STRIP_2 53
-#define TOTAL_LEDS_STRIP_2 30
+#define PIN_LED_STRIP_1 53
+#define TOTAL_LEDS_STRIP_1 108
+#define PIN_LED_STRIP_2 52
+#define TOTAL_LEDS_STRIP_2 120
 
 // ------------------------------------------------------ Leds ------------------------------------------------------ //
 #define TOTAL_LEDS TOTAL_LEDS_STRIP_1 + TOTAL_LEDS_STRIP_2
@@ -24,13 +24,13 @@
 
 // --------------------------------------------------- Split parts --------------------------------------------------- //
 #define LEDSTART 0
-#define LEDSPLIT1 10   // RingLaser # LEDSTART --- LEDSPLIT1
-#define LEDSPLIT2 18   // LeftLaser # LEDSPLIT1 --- LEDSPLIT2
-#define LEDSPLIT3 26  // Centerlight # etc.
-#define LEDSPLIT4 34  // Backtoplight
-#define LEDSPLIT5 42  // Centerlight
-#define LEDSPLIT6 50  // RightLaser
-#define LEDEND 60     // RingLaser
+#define LEDSPLIT1 34   // RingLaser # LEDSTART --- LEDSPLIT1
+#define LEDSPLIT2 66   // LeftLaser # LEDSPLIT1 --- LEDSPLIT2
+#define LEDSPLIT3 98  // Centerlight # etc.
+#define LEDSPLIT4 130  // Backtoplight
+#define LEDSPLIT5 162  // Centerlight
+#define LEDSPLIT6 194  // RightLaser
+#define LEDEND 228     // RingLaser
 
 //SETUP END
 
