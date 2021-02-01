@@ -5,8 +5,8 @@ t_cached_colors cached_colors;
 
 bool IsChroma = false;
 
-CRGB leds[NUM_LEDS];
-CRGBArray<NUM_LEDS> support_array;
+CRGB leds[TOTAL_LEDS];
+CRGBArray<TOTAL_LEDS> support_array;
 
 t_light_controller stripeControl[7];
 
@@ -45,8 +45,8 @@ void setup()
   init_lasers();
 
   // FastLED.addLeds<LEDTYPE, DATA_PIN, GRB>(leds, NUM_LEDS);
-
-  FastLED.addLeds<LEDTYPE, DATA_PIN>(leds, NUM_LEDS);
+  FastLED.addLeds<LEDTYPE, PIN_LED_STRIP_1>(leds, 0, TOTAL_LEDS_STRIP_1);
+  FastLED.addLeds<LEDTYPE, PIN_LED_STRIP_2>(leds, TOTAL_LEDS_STRIP_1, TOTAL_LEDS_STRIP_2);
 
   if (BRIGHTNESS != 255)
   {
@@ -63,7 +63,7 @@ void setup()
 
   Serial.begin(BAUD_RATE);
 
-  checkLeds(leds, 0, NUM_LEDS);
+  checkLeds(leds, 0, TOTAL_LEDS);
 }
 
 void reset_controllers()
@@ -121,9 +121,16 @@ void show_frame()
   if (current_mills_cached - frame_time_start_millis > TIME_BETWEEN_UPDATES)
   {
     // update leds with current settings
-    for (int i = 0; i < NUM_LEDS; ++i)
+    int i, k = 0;
+    for (i = TOTAL_LEDS_STRIP_1 - 1; i >= 0; --i)
     {
-      leds[i] = support_array[i];
+      leds[i] = support_array[k];
+      k = k + 1;
+    }
+    for (i = TOTAL_LEDS_STRIP_1; i < TOTAL_LEDS; ++i)
+    {
+      leds[i] = support_array[k];
+      k = k + 1;
     }
 
     // Show updates

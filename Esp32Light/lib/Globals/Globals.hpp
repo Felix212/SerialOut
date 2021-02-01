@@ -2,28 +2,35 @@
 
 #include <stdint.h>
 #include "FastLED.h"
-//SETUP
-#define NUM_LEDS 28 //amount of leds
+
+// ------------------------------------------------------ Pins ------------------------------------------------------ //
+#define PIN_LED_STRIP_1 52
+#define TOTAL_LEDS_STRIP_1 30
+#define PIN_LED_STRIP_2 53
+#define TOTAL_LEDS_STRIP_2 30
+
+// ------------------------------------------------------ Leds ------------------------------------------------------ //
+#define TOTAL_LEDS TOTAL_LEDS_STRIP_1 + TOTAL_LEDS_STRIP_2
 
 // If LEDTYPE is NEOPIXEL it is necessary to edit file main.cpp in line
 // FastLED.addLeds<LEDTYPE, DATA_PIN, GRB>(leds, NUM_LEDS);
 // with
 // FastLED.addLeds<LEDTYPE, DATA_PIN>(leds, NUM_LEDS);
 #define LEDTYPE NEOPIXEL
-#define DATA_PIN 13   // GPIO pin
+
 #define POWERLIMIT -1 //max usage of power in milliwatts, -1 for ulimited
 #define BAUD_RATE 115200
 #define UPDATES_PER_SECOND 60
 
-// led strip is split into different sections.
+// --------------------------------------------------- Split parts --------------------------------------------------- //
 #define LEDSTART 0
-#define LEDSPLIT1 4   // RingLaser # LEDSTART --- LEDSPLIT1
-#define LEDSPLIT2 8  // LeftLaser # LEDSPLIT1 --- LEDSPLIT2
-#define LEDSPLIT3 12  // Centerlight # etc.
-#define LEDSPLIT4 16  // Backtoplight
-#define LEDSPLIT5 20  // Centerlight
-#define LEDSPLIT6 24 // RightLaser
-#define LEDEND 28    // RingLaser
+#define LEDSPLIT1 10   // RingLaser # LEDSTART --- LEDSPLIT1
+#define LEDSPLIT2 18   // LeftLaser # LEDSPLIT1 --- LEDSPLIT2
+#define LEDSPLIT3 26  // Centerlight # etc.
+#define LEDSPLIT4 34  // Backtoplight
+#define LEDSPLIT5 42  // Centerlight
+#define LEDSPLIT6 50  // RightLaser
+#define LEDEND 60     // RingLaser
 
 //SETUP END
 
