@@ -33,6 +33,7 @@ byte ev_0;
 byte ev_1;
 byte event_type;
 byte event_value;
+bool handling_laser;
 int handler_index;
 
 void setup()
@@ -227,11 +228,15 @@ void loop()
         break;
       case LEFTLASER:
         handler_index = 1;
+        handling_laser = true;
         controlLight();
+        handling_laser = false;
         break;
       case RIGHTLASER:
         handler_index = 5;
+        handling_laser = true;
         controlLight();
+        handling_laser = false;
         break;
       case CENTERLIGHT:
         handler_index = 2;
@@ -332,26 +337,44 @@ void controlLight()
   {
     if (current_handler->status.FLASH == 1)
     {
-      //take color without divider for flash
-      if (handler_index != 1 && handler_index != 5) // if not laser
-      {
-        support_array(current_handler->from, current_handler->to - 1) = current_handler->color_flash;
-      }
       current_handler->actual_color = current_handler->color_flash;
     }
     else
     {
-      if (handler_index != 1 && handler_index != 5) // if not laser
-      {
-        support_array(current_handler->from, current_handler->to - 1) = current_handler->color;
-      }
       current_handler->actual_color = current_handler->color;
+    }
+
+    // Update color
+    if (handling_laser)
+    {
+      for (int i = current_handler->from; i < current_handler->to; ++i)
+      {
+        if (support_array[i].getAverageLight() > 16) // not black or dark
+        {
+          support_array[i] = current_handler->actual_color;
+        }
+      }
+    }
+    else
+    {
+      support_array(current_handler->from, current_handler->to - 1) = current_handler->actual_color;
     }
   }
   else
   {
     support_array(current_handler->from, current_handler->to - 1) = CRGB::Black;
     current_handler->actual_color = CRGB::Black;
+    if (handling_laser)
+    {
+      if (handler_index == 1) // left laser
+      {
+        leftLaser.laserIndex = 0;
+      }
+      else if (handler_index == 5) // right laser
+      {
+        rightLaser.laserIndex = 0;
+      }
+    }
   }
 }
 

@@ -19,8 +19,8 @@
 #define LEDTYPE NEOPIXEL
 
 #define POWERLIMIT -1 //max usage of power in milliwatts, -1 for ulimited
-#define BAUD_RATE 115200
-#define UPDATES_PER_SECOND 60
+#define BAUD_RATE 250000
+#define UPDATES_PER_SECOND 90
 
 // --------------------------------------------------- Split parts --------------------------------------------------- //
 #define LEDSTART 0
