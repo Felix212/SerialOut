@@ -19,6 +19,12 @@ typedef struct LightController
     // to -1 is last led of this light
     int to;
 
+    // time of when light was turn on
+    uint32_t turn_up_millis;
+
+    // flag to turn of light after minimum time passed
+    bool have_to_turn_off;
+
     // color of light
     CRGB color;
     CRGB color_flash;

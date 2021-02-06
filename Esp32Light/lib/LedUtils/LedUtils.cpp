@@ -10,11 +10,13 @@ void checkLeds(CRGB *actual_leds, int from, int to)
     }
 
     FastLED.show();
+    delay(500);
 
     for (int i = from; i < to; i++)
     {
         actual_leds[i] = CRGB::Red;
     }
+
     FastLED.show();
     delay(500);
 
@@ -22,6 +24,7 @@ void checkLeds(CRGB *actual_leds, int from, int to)
     {
         actual_leds[i] = CRGB::Green;
     }
+
     FastLED.show();
     delay(500);
 
@@ -29,6 +32,7 @@ void checkLeds(CRGB *actual_leds, int from, int to)
     {
         actual_leds[i] = CRGB::Blue;
     }
+
     FastLED.show();
     delay(500);
 
@@ -36,5 +40,6 @@ void checkLeds(CRGB *actual_leds, int from, int to)
     {
         actual_leds[i] = CRGB::Black;
     }
+    
     FastLED.show();
 }

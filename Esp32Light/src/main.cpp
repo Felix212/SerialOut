@@ -176,6 +176,8 @@ void loop()
     {
       switch (ev_0)
       {
+      case SETUPEVENTS:
+        break;
       case TURNOFFLIGHTS:
         support_array(0, LEDEND - 1) = CRGB::Black;
         reset_controllers();
@@ -206,7 +208,8 @@ void loop()
     }
     else
     {
-      event_value = (ev_0 & 15);
+      event_type = ev_0 >> 4;
+      event_value = ev_0 & 15;
       if (IsChroma)
       {
         chromaColor = CRGB((ev_1 >> 5) * 32,        // red
@@ -214,43 +217,43 @@ void loop()
                            (ev_1 & 3) * 64);        // blue
       }
 
-      switch ((ev_0 >> 4))
+      switch (event_type)
       {
       case BACKTOPLASER:
-        handler_index = 3;
+        handler_index = INDEX_BACK_TOP_LASER;
         controlLight();
         break;
       case RINGLASER:
-        handler_index = 0;
+        handler_index = INDEX_RING_LASER_LEFT;
         controlLight();
-        handler_index = 6;
+        handler_index = INDEX_RING_LASER_RIGHT;
         controlLight();
         break;
       case LEFTLASER:
-        handler_index = 1;
+        handler_index = INDEX_LEFT_LASER;
         handling_laser = true;
         controlLight();
         handling_laser = false;
         break;
       case RIGHTLASER:
-        handler_index = 5;
+        handler_index = INDEX_RIGHT_LASER;
         handling_laser = true;
         controlLight();
         handling_laser = false;
         break;
       case CENTERLIGHT:
-        handler_index = 2;
+        handler_index = INDEX_CENTER_LIGHT_LEFT;
         controlLight();
-        handler_index = 4;
+        handler_index = INDEX_CENTER_LIGHT_RIGHT;
         controlLight();
         break;
       // Laser configuration Events
       case LEFTLASERSPEED:
-        leftLaser.laserSpeed = (ev_0 & 15);
+        leftLaser.laserSpeed = event_value;
         laser_left_time_update = 151 / leftLaser.laserSpeed;
         break;
       case RIGHTLASERSPEED:
-        rightLaser.laserSpeed = (ev_0 & 15);
+        rightLaser.laserSpeed = event_value;
         laser_right_time_update = 151 / rightLaser.laserSpeed;
         break;
       default:
@@ -264,6 +267,27 @@ void loop()
   //laser walkanimation
   ledwalkleft(&leftLaser);
   ledwalkright(&rightLaser);
+
+  for (int i = 0; i < 7; ++i)
+  {
+    if (stripeControl[i].have_to_turn_off)
+    {
+      if (current_mills_cached - stripeControl[i].turn_up_millis > MINIUM_TURN_ON_LIGHT_TIME)
+      {
+        stripeControl[i].have_to_turn_off = false;
+        support_array(stripeControl[i].from, stripeControl[i].to - 1) = CRGB::Black;
+        stripeControl[i].actual_color = CRGB::Black;
+        if (i == INDEX_LEFT_LASER) // left laser
+        {
+          leftLaser.laserIndex = 0;
+        }
+        else if (i == INDEX_RIGHT_LASER) // right laser
+        {
+          rightLaser.laserIndex = 0;
+        }
+      }
+    }
+  }
 
   // coloring actual leds
   show_frame();
@@ -335,6 +359,7 @@ void controlLight()
   /* Updates LEDS color */
   if (current_handler->status.ON == 1)
   {
+    current_handler->turn_up_millis = current_mills_cached;
     if (current_handler->status.FLASH == 1)
     {
       current_handler->actual_color = current_handler->color_flash;
@@ -344,7 +369,7 @@ void controlLight()
       current_handler->actual_color = current_handler->color;
     }
 
-    // Update color
+    // Update color of turned on leds
     if (handling_laser)
     {
       for (int i = current_handler->from; i < current_handler->to; ++i)
@@ -362,19 +387,7 @@ void controlLight()
   }
   else
   {
-    support_array(current_handler->from, current_handler->to - 1) = CRGB::Black;
-    current_handler->actual_color = CRGB::Black;
-    if (handling_laser)
-    {
-      if (handler_index == 1) // left laser
-      {
-        leftLaser.laserIndex = 0;
-      }
-      else if (handler_index == 5) // right laser
-      {
-        rightLaser.laserIndex = 0;
-      }
-    }
+    current_handler->have_to_turn_off = true;
   }
 }
 
@@ -386,7 +399,7 @@ void fadeLight()
 
   if (current_handler->actual_color.getAverageLight() > 16)
   {
-    if (handler_index != 1 && handler_index != 5) // if not laser
+    if (handler_index != INDEX_LEFT_LASER && handler_index != INDEX_RIGHT_LASER) // if not laser
     {
       support_array(current_handler->from, current_handler->to - 1) = current_handler->actual_color;
     }
@@ -408,14 +421,14 @@ void fadeFlashLight()
 
   if (current_handler->actual_color.getLuma() > current_handler->color.getLuma())
   {
-    if (handler_index != 1 && handler_index != 5) // if not laser
+    if (handler_index != INDEX_LEFT_LASER && handler_index != INDEX_RIGHT_LASER) // if not laser
     {
       support_array(current_handler->from, current_handler->to - 1) = current_handler->actual_color;
     }
   }
   else
   {
-    if (handler_index != 1 && handler_index != 5) // if not laser
+    if (handler_index != INDEX_LEFT_LASER && handler_index != INDEX_RIGHT_LASER) // if not laser
     {
       support_array(current_handler->from, current_handler->to - 1) = current_handler->color;
     }

@@ -3,6 +3,9 @@
 #include "LedUtils.hpp"
 #include "SupportStructures.hpp"
 
+static CRGB defaultColorLEFT = CRGB(255, 0, 0);
+static CRGB defaultColorRIGHT = CRGB(0, 125, 255);
+
 void init_controllers();
 void init_lasers();
 void fadeLight();
