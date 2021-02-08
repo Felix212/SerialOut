@@ -46,3 +46,8 @@ typedef struct Laser
     int strip_part_index;
     bool toggle = true;
 } t_laser;
+
+typedef struct LightEvent
+{
+    
+} t_lightEvent;

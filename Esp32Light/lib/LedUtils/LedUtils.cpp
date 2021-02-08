@@ -43,3 +43,18 @@ void checkLeds(CRGB *actual_leds, int from, int to)
     
     FastLED.show();
 }
+
+void update_leds(CRGB *actual_leds, CRGB *support_array)
+{
+    int i, k = 0;
+    for (i = TOTAL_LEDS_STRIP_1 - 1; i >= 0; --i)
+    {
+      actual_leds[i] = support_array[k];
+      k = k + 1;
+    }
+    for (i = TOTAL_LEDS_STRIP_1; i < TOTAL_LEDS; ++i)
+    {
+      actual_leds[i] = support_array[k];
+      k = k + 1;
+    }
+}

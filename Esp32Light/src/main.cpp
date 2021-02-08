@@ -122,17 +122,6 @@ void show_frame()
   if (current_mills_cached - frame_time_start_millis > TIME_BETWEEN_UPDATES)
   {
     // update leds with current settings
-    int i, k = 0;
-    for (i = TOTAL_LEDS_STRIP_1 - 1; i >= 0; --i)
-    {
-      leds[i] = support_array[k];
-      k = k + 1;
-    }
-    for (i = TOTAL_LEDS_STRIP_1; i < TOTAL_LEDS; ++i)
-    {
-      leds[i] = support_array[k];
-      k = k + 1;
-    }
 
     // Show updates
     FastLED.show();
