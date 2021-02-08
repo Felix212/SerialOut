@@ -39,15 +39,10 @@ typedef struct CacheColors
     CRGB color_right_flash;
 } t_cached_colors;
 
-typedef struct Laser
-{
-    int laserSpeed = 5;
-    int laserIndex = 0;
-    int strip_part_index;
-    bool toggle = true;
-} t_laser;
-
 typedef struct LightEvent
 {
-    
+    int light_group;
+    int event_type;
+    int event_value;
+    CRGB color;
 } t_lightEvent;

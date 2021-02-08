@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Globals.hpp"
 #include "SupportStructures.hpp"
 

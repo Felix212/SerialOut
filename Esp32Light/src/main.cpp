@@ -69,7 +69,7 @@ void setup()
 
 void reset_controllers()
 {
-  for (int i = 0; i < 7; i++)
+  for (int i = 0; i < 7; ++i)
   {
     stripeControl[i].status.ON = 0;
     stripeControl[i].status.FADE = 0;
@@ -82,8 +82,99 @@ void reset_controllers()
 
 void init_controllers()
 {
-  int valuesMinMax[] = {LEDSTART, LEDSPLIT1, LEDSPLIT2, LEDSPLIT3, LEDSPLIT4, LEDSPLIT5, LEDSPLIT6, LEDEND};
-  for (int i = 0; i < 7; i++)
+  int valuesMinMax[] = {0, 0, 0, 0, 0, 0, 0, 0};
+  if (CUSTOM_SPLITS)
+  {
+    valuesMinMax[0] = LEDSTART;
+    valuesMinMax[1] = LEDSPLIT1;
+    valuesMinMax[2] = LEDSPLIT2;
+    valuesMinMax[3] = LEDSPLIT3;
+    valuesMinMax[4] = LEDSPLIT4;
+    valuesMinMax[5] = LEDSPLIT5;
+    valuesMinMax[6] = LEDSPLIT6;
+    valuesMinMax[7] = LEDEND;
+  }
+  else
+  {
+    int increment = TOTAL_LEDS / 7;
+    int missing_leds = TOTAL_LEDS - increment * 7;
+
+    for (size_t i = 1; i < 8; ++i)
+    {
+      valuesMinMax[i] = valuesMinMax[i - 1] + increment;
+    }
+    if (missing_leds > 0)
+    {
+      switch (missing_leds)
+      {
+        // BackTopLaser
+      case 1:
+        valuesMinMax[1] += 0;
+        valuesMinMax[2] += 0;
+        valuesMinMax[3] += 0;
+        valuesMinMax[4] += 1;
+        valuesMinMax[5] += 1;
+        valuesMinMax[6] += 1;
+        valuesMinMax[7] += 1;
+        break;
+        // Both Lasers
+      case 2:
+        valuesMinMax[1] += 0;
+        valuesMinMax[2] += 1;
+        valuesMinMax[3] += 1;
+        valuesMinMax[4] += 1;
+        valuesMinMax[5] += 1;
+        valuesMinMax[6] += 2;
+        valuesMinMax[7] += 2;
+        break;
+        // Both Lasers - BackTopLaser
+      case 3:
+        valuesMinMax[1] += 0;
+        valuesMinMax[2] += 1;
+        valuesMinMax[3] += 1;
+        valuesMinMax[4] += 2;
+        valuesMinMax[5] += 2;
+        valuesMinMax[6] += 3;
+        valuesMinMax[7] += 3;
+        break;
+      case 4:
+        // Both Lasers - Both Center Lights
+        valuesMinMax[1] += 0;
+        valuesMinMax[2] += 1;
+        valuesMinMax[3] += 2;
+        valuesMinMax[4] += 2;
+        valuesMinMax[5] += 3;
+        valuesMinMax[6] += 4;
+        valuesMinMax[7] += 4;
+        break;
+        // Both Lasers - Both Center Lights - BackTopLaser
+      case 5:
+        valuesMinMax[1] += 0;
+        valuesMinMax[2] += 1;
+        valuesMinMax[3] += 2;
+        valuesMinMax[4] += 3;
+        valuesMinMax[5] += 4;
+        valuesMinMax[6] += 5;
+        valuesMinMax[7] += 5;
+        break;
+        // Both Lasers - Both Center Lights - Both RingLights
+      case 6:
+        valuesMinMax[1] += 1;
+        valuesMinMax[2] += 2;
+        valuesMinMax[3] += 3;
+        valuesMinMax[4] += 3;
+        valuesMinMax[5] += 4;
+        valuesMinMax[6] += 5;
+        valuesMinMax[7] += 6;
+        break;
+
+      default:
+        break;
+      }
+    }
+  }
+
+  for (int i = 0; i < 7; ++i)
   {
     stripeControl[i].from = valuesMinMax[i];
     stripeControl[i].to = valuesMinMax[i + 1];
@@ -122,9 +213,11 @@ void show_frame()
   if (current_mills_cached - frame_time_start_millis > TIME_BETWEEN_UPDATES)
   {
     // update leds with current settings
+    update_leds(leds, support_array);
 
     // Show updates
     FastLED.show();
+
     frame_time_start_millis = current_mills_cached;
   }
 }
@@ -257,6 +350,7 @@ void loop()
   ledwalkleft(&leftLaser);
   ledwalkright(&rightLaser);
 
+  // if minimum time passed of led on
   for (int i = 0; i < 7; ++i)
   {
     if (stripeControl[i].have_to_turn_off)
