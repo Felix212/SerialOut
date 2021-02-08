@@ -103,74 +103,72 @@ void init_controllers()
     {
       valuesMinMax[i] = valuesMinMax[i - 1] + increment;
     }
-    if (missing_leds > 0)
-    {
-      switch (missing_leds)
-      {
-        // BackTopLaser
-      case 1:
-        valuesMinMax[1] += 0;
-        valuesMinMax[2] += 0;
-        valuesMinMax[3] += 0;
-        valuesMinMax[4] += 1;
-        valuesMinMax[5] += 1;
-        valuesMinMax[6] += 1;
-        valuesMinMax[7] += 1;
-        break;
-        // Both Lasers
-      case 2:
-        valuesMinMax[1] += 0;
-        valuesMinMax[2] += 1;
-        valuesMinMax[3] += 1;
-        valuesMinMax[4] += 1;
-        valuesMinMax[5] += 1;
-        valuesMinMax[6] += 2;
-        valuesMinMax[7] += 2;
-        break;
-        // Both Lasers - BackTopLaser
-      case 3:
-        valuesMinMax[1] += 0;
-        valuesMinMax[2] += 1;
-        valuesMinMax[3] += 1;
-        valuesMinMax[4] += 2;
-        valuesMinMax[5] += 2;
-        valuesMinMax[6] += 3;
-        valuesMinMax[7] += 3;
-        break;
-      case 4:
-        // Both Lasers - Both Center Lights
-        valuesMinMax[1] += 0;
-        valuesMinMax[2] += 1;
-        valuesMinMax[3] += 2;
-        valuesMinMax[4] += 2;
-        valuesMinMax[5] += 3;
-        valuesMinMax[6] += 4;
-        valuesMinMax[7] += 4;
-        break;
-        // Both Lasers - Both Center Lights - BackTopLaser
-      case 5:
-        valuesMinMax[1] += 0;
-        valuesMinMax[2] += 1;
-        valuesMinMax[3] += 2;
-        valuesMinMax[4] += 3;
-        valuesMinMax[5] += 4;
-        valuesMinMax[6] += 5;
-        valuesMinMax[7] += 5;
-        break;
-        // Both Lasers - Both Center Lights - Both RingLights
-      case 6:
-        valuesMinMax[1] += 1;
-        valuesMinMax[2] += 2;
-        valuesMinMax[3] += 3;
-        valuesMinMax[4] += 3;
-        valuesMinMax[5] += 4;
-        valuesMinMax[6] += 5;
-        valuesMinMax[7] += 6;
-        break;
 
-      default:
-        break;
-      }
+    switch (missing_leds)
+    {
+      // BackTopLaser
+    case 1:
+      valuesMinMax[1] += 0;
+      valuesMinMax[2] += 0;
+      valuesMinMax[3] += 0;
+      valuesMinMax[4] += 1;
+      valuesMinMax[5] += 1;
+      valuesMinMax[6] += 1;
+      valuesMinMax[7] += 1;
+      break;
+      // Both Lasers
+    case 2:
+      valuesMinMax[1] += 0;
+      valuesMinMax[2] += 1;
+      valuesMinMax[3] += 1;
+      valuesMinMax[4] += 1;
+      valuesMinMax[5] += 1;
+      valuesMinMax[6] += 2;
+      valuesMinMax[7] += 2;
+      break;
+      // Both Lasers - BackTopLaser
+    case 3:
+      valuesMinMax[1] += 0;
+      valuesMinMax[2] += 1;
+      valuesMinMax[3] += 1;
+      valuesMinMax[4] += 2;
+      valuesMinMax[5] += 2;
+      valuesMinMax[6] += 3;
+      valuesMinMax[7] += 3;
+      break;
+    case 4:
+      // Both Lasers - Both Center Lights
+      valuesMinMax[1] += 0;
+      valuesMinMax[2] += 1;
+      valuesMinMax[3] += 2;
+      valuesMinMax[4] += 2;
+      valuesMinMax[5] += 3;
+      valuesMinMax[6] += 4;
+      valuesMinMax[7] += 4;
+      break;
+      // Both Lasers - Both Center Lights - BackTopLaser
+    case 5:
+      valuesMinMax[1] += 0;
+      valuesMinMax[2] += 1;
+      valuesMinMax[3] += 2;
+      valuesMinMax[4] += 3;
+      valuesMinMax[5] += 4;
+      valuesMinMax[6] += 5;
+      valuesMinMax[7] += 5;
+      break;
+      // Both Lasers - Both Center Lights - Both RingLights
+    case 6:
+      valuesMinMax[1] += 1;
+      valuesMinMax[2] += 2;
+      valuesMinMax[3] += 3;
+      valuesMinMax[4] += 3;
+      valuesMinMax[5] += 4;
+      valuesMinMax[6] += 5;
+      valuesMinMax[7] += 6;
+      break;
+
+    default:
+      break;
     }
   }
 

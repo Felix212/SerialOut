@@ -54,38 +54,67 @@
 #define BRIGHTNESS 255         //If you power your leds by the ESP32 directly, dont use anything higher than 130. 255 is maximum.
 
 // ----------------------------------------------------- Events ----------------------------------------------------- //
-// Event Type
-#define LIGHT_EVENT 1
-#define SETUP_EVENT 2
+// Show events
+#define LIGHT_OFF 0
 
-// Light Group
+#define RIGHT_COLOR_ON 1
+#define RIGHT_COLOR_FADE 2
+#define RIGHT_COLOR_FLASH 3
+
+#define LEFT_COLOR_ON 5
+#define LEFT_COLOR_FADE 6
+#define LEFT_COLOR_FLASH 7
+
+#define LEFTLASERSPEED 12
+#define RIGHTLASERSPEED 13
+
+// from 240 there are setup events
+#define SETUPEVENTS 251
+#define TURNOFFLIGHTS 252
+
+#define LEFTCOLOR 253
+#define RIGHTCOLOR 254
+
+#define CHROMAEVENT 255
+
+// Light Groups
 #define BACKTOPLASER 0
 #define RINGLASER 1
 #define LEFTLASER 2
 #define RIGHTLASER 3
 #define CENTERLIGHT 4
-#define LEFTLASERSPEED 12
-#define RIGHTLASERSPEED 13
+
+// Group Leds
+enum class LightGroup
+{
+    Error,
+    BackTopLaser,
+    RingLaser,
+    LeftLaser,
+    RightLaser,
+    CenterLight
+};
 
 // Light Group Events
-enum class LightEvents
+enum class SerialEvents
 {
+    Error,
     Light_Off,
     Right_Color_On,
     Right_Color_Flash,
     Right_Color_Fade,
-    Unused,
     Left_Color_On,
     Left_Color_Flash,
     Left_Color_Fade,
+    Left_Laser_Speed,
+    Right_Laser_Speed,
+    Setup_Events,
+    Turn_Off_Lights,
+    Left_Color,
+    Right_Color,
+    Chroma_Event
 };
 
-// Setup event
-#define SETUPEVENTS 251
-#define TURNOFFLIGHTS 252
-#define LEFTCOLOR 253
-#define RIGHTCOLOR 254
-#define CHROMAEVENT 255
 
 // ---------------------------------------------- Various ----------------------------------------------- //
 

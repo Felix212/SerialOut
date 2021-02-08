@@ -39,10 +39,10 @@ typedef struct CacheColors
     CRGB color_right_flash;
 } t_cached_colors;
 
-typedef struct LightEvent
+typedef struct Event
 {
-    int light_group;
-    int event_type;
+    SerialEvents event_name;
+    LightGroup light_group;
     int event_value;
     CRGB color;
 } t_lightEvent;

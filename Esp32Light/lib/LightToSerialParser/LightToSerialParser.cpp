@@ -6,12 +6,10 @@ LightToSerialParser::LightToSerialParser()
 	{
 		buffer[i] = 0;
 	}
-
-	total_read_byte = 0;
-	current_pos_buffer = 0;
 }
 
-int LightToSerialParser::dataAvailable()
+// Checks if there are events to handle
+bool LightToSerialParser::moreEvents()
 {
 	return Serial.available();
 }
@@ -23,50 +21,108 @@ void LightToSerialParser::byteToRGB(CRGB *color, byte data_color)
 	color->b = (data_color & 3) * 64;
 }
 
+// Read buffer_size bytes from Serial and stores them in parser buffer
 void LightToSerialParser::readData()
 {
-	total_read_byte = Serial.readBytes(buffer, buffer_size);
-	current_pos_buffer = 0;
+	Serial.readBytes(buffer, buffer_size);
 }
 
-bool LightToSerialParser::moreEvents()
+LightGroup valToLightGroup(byte val)
 {
-	return current_pos_buffer < total_read_byte;
+	switch (val)
+	{
+	case BACKTOPLASER:
+		return LightGroup::BackTopLaser;
+	case RINGLASER:
+		return LightGroup::RingLaser;
+	case LEFTLASER:
+		return LightGroup::LeftLaser;
+	case RIGHTLASER:
+		return LightGroup::RightLaser;
+	case CENTERLIGHT:
+		return LightGroup::CenterLight;
+	default:
+		return LightGroup::Error;
+	}
 }
 
-t_lightEvent *LightToSerialParser::parseMessage()
+SerialEvents nameToLightEvent(byte name)
+{
+	switch (name)
+	{
+	case LIGHT_OFF:
+		return SerialEvents::Light_Off;
+	case RIGHT_COLOR_ON:
+		return SerialEvents::Right_Color_On;
+	case RIGHT_COLOR_FADE:
+		return SerialEvents::Right_Color_Fade;
+	case RIGHT_COLOR_FLASH:
+		return SerialEvents::Right_Color_Flash;
+	case LEFT_COLOR_ON:
+		return SerialEvents::Left_Color_On;
+	case LEFT_COLOR_FADE:
+		return SerialEvents::Left_Color_Fade;
+	case LEFT_COLOR_FLASH:
+		return SerialEvents::Left_Color_Flash;
+	case LEFTLASERSPEED:
+		return SerialEvents::Left_Laser_Speed;
+	case RIGHTLASERSPEED:
+		return SerialEvents::Right_Laser_Speed;
+	case SETUPEVENTS:
+		return SerialEvents::Setup_Events;
+	case TURNOFFLIGHTS:
+		return SerialEvents::Turn_Off_Lights;
+	case LEFTCOLOR:
+		return SerialEvents::Left_Color;
+	case RIGHTCOLOR:
+		return SerialEvents::Right_Color;
+	case CHROMAEVENT:
+		return SerialEvents::Chroma_Event;
+	default:
+		return SerialEvents::Error;
+	}
+}
+
+// Decode data in buffer as defined in https://github.com/Felix212/SerialOut/wiki/Serial-Protocol
+t_lightEvent * LightToSerialParser::parseMessage()
 {
 	t_lightEvent *message = (t_lightEvent *)malloc(sizeof(t_lightEvent));
-	//= (BS_LightEvent){msg[0], msg[1], msg[2]};
-	if (buffer[current_pos_buffer] < 252)
-	{
-		message->type = (buffer[current_pos_buffer] >> 4);
-		message->value = (buffer[current_pos_buffer] & 15);
+    message->event_value = 0;
 
-		// if buffer[current_pos_buffer + 1] is 0 then 0 will be applied as color -> black
-		byteToRGB(&message->color, buffer[current_pos_buffer + 1]);
+	ev_0 = buffer[0];
+    ev_1 = buffer[1];
+
+	// Ev_0 has bits are something like 1111xxxx
+    if (ev_0 > 239)
+    {
+		message->event_name = nameToLightEvent(ev_0);
+		if (message->event_name == SerialEvents::Left_Color ||
+			message->event_name == SerialEvents::Right_Color)
+		{
+			byteToRGB(&message->color, ev_1);
+		} 
+		else
+		{
+			message->event_value = ev_1;
+		}
+    }
+	// Ev_0 has bits are something like 11xxyyyy
+	// So just 1100yyyy, 1101yyyy, 1110yyyy since 1111xxxx has already been handled
+    else if(ev_0 > 191)
+	{
+		message->event_name = nameToLightEvent(ev_0 >> 4);
+		message->event_value = ev_0 & 15;
 	}
+	// Ev_0 bits are something like xxxxyyyy
+	// xxxx will be light group, yyyy light event to apply to that group
+	// 0000, ..., 1011 group
+	// 0000, ..., 1011 event
 	else
 	{
-		switch (buffer[current_pos_buffer])
-		{
-		case TURNOFFLIGHTS: // 252
-			message->type = TURNOFFLIGHTS;
-			break;
-		case LEFTCOLOR:	 // 253
-		case RIGHTCOLOR: // 254
-			message->type = buffer[current_pos_buffer];
-			byteToRGB(&message->color, buffer[current_pos_buffer + 1]);
-			break;
-
-		case CHROMAEVENT: // 255
-			message->type = CHROMAEVENT;
-			message->value = buffer[current_pos_buffer + 1];
-		default:
-			break;
-		}
+		message->light_group = valToLightGroup(ev_0 >> 4);
+		message->event_name = nameToLightEvent(ev_0 & 15);
+		byteToRGB(&message->color, ev_1);
 	}
 
-	current_pos_buffer += 2;
 	return message;
 }
