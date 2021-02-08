@@ -55,6 +55,9 @@
 
 // ----------------------------------------------------- Events ----------------------------------------------------- //
 // Show events
+#define SHOW_EVENTS 1
+#define SETUP_EVENTS 2
+
 #define LIGHT_OFF 0
 
 #define RIGHT_COLOR_ON 1
@@ -84,7 +87,6 @@
 #define RIGHTLASER 3
 #define CENTERLIGHT 4
 
-// Group Leds
 enum class LightGroup
 {
     Error,
@@ -95,8 +97,17 @@ enum class LightGroup
     CenterLight
 };
 
-// Light Group Events
-enum class SerialEvents
+enum class SetupEvents
+{
+    Error,
+    First_Song_Event,
+    Turn_Off_Lights,
+    Left_Color,
+    Right_Color,
+    Chroma_Event
+};
+
+enum class ShowEvents
 {
     Error,
     Light_Off,
@@ -108,11 +119,6 @@ enum class SerialEvents
     Left_Color_Fade,
     Left_Laser_Speed,
     Right_Laser_Speed,
-    Setup_Events,
-    Turn_Off_Lights,
-    Left_Color,
-    Right_Color,
-    Chroma_Event
 };
 
 

@@ -41,6 +41,7 @@ typedef struct CacheColors
 
 typedef struct Event
 {
+    int event_type;
     SerialEvents event_name;
     LightGroup light_group;
     int event_value;

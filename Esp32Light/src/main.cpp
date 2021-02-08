@@ -23,11 +23,6 @@ uint32_t laser_right_timer_start;
 uint32_t laser_left_time_update;
 uint32_t laser_right_time_update;
 
-//light events control
-CRGB chromaColor; // defined outside to not declare every event
-LightEvents current_LightEvent;
-t_light_controller *current_handler;
-
 byte event_buffer[2];
 byte ev_0;
 byte ev_1;
@@ -36,8 +31,13 @@ byte event_value;
 bool handling_laser;
 int handler_index;
 
+LightToSerialParser *parser;
+t_lightEvent *current_event;
+
 void setup()
 {
+  parser = new LightToSerialParser();
+
   cacheLeftColor(defaultColorLEFT.r, defaultColorLEFT.g, defaultColorLEFT.b);
   cacheRightColor(defaultColorRIGHT.r, defaultColorRIGHT.g, defaultColorRIGHT.b);
 
@@ -246,8 +246,11 @@ void loop()
   current_mills_cached = millis();
 
   // Only do something if there's new data
-  while (Serial.available())
+  while (parser->moreEvents())
   {
+    parser->readData();
+    current_event = parser->parseMessage();
+    free(current_event);
     Serial.readBytes(event_buffer, 2);
     ev_0 = event_buffer[0];
     ev_1 = event_buffer[1];

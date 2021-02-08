@@ -46,40 +46,49 @@ LightGroup valToLightGroup(byte val)
 	}
 }
 
-SerialEvents nameToLightEvent(byte name)
+SetupEvents nameToSetupEvent(byte name)
+{
+	switch (name)
+	{
+	case SETUPEVENTS:
+		return SetupEvents::First_Song_Event;
+	case TURNOFFLIGHTS:
+		return SetupEvents::Turn_Off_Lights;
+	case LEFTCOLOR:
+		return SetupEvents::Left_Color;
+	case RIGHTCOLOR:
+		return SetupEvents::Right_Color;
+	case CHROMAEVENT:
+		return SetupEvents::Chroma_Event;
+	default:
+		return SetupEvents::Error;
+	}
+}
+
+ShowEvents nameToShowEvent(byte name)
 {
 	switch (name)
 	{
 	case LIGHT_OFF:
-		return SerialEvents::Light_Off;
+		return ShowEvents::Light_Off;
 	case RIGHT_COLOR_ON:
-		return SerialEvents::Right_Color_On;
+		return ShowEvents::Right_Color_On;
 	case RIGHT_COLOR_FADE:
-		return SerialEvents::Right_Color_Fade;
+		return ShowEvents::Right_Color_Fade;
 	case RIGHT_COLOR_FLASH:
-		return SerialEvents::Right_Color_Flash;
+		return ShowEvents::Right_Color_Flash;
 	case LEFT_COLOR_ON:
-		return SerialEvents::Left_Color_On;
+		return ShowEvents::Left_Color_On;
 	case LEFT_COLOR_FADE:
-		return SerialEvents::Left_Color_Fade;
+		return ShowEvents::Left_Color_Fade;
 	case LEFT_COLOR_FLASH:
-		return SerialEvents::Left_Color_Flash;
+		return ShowEvents::Left_Color_Flash;
 	case LEFTLASERSPEED:
-		return SerialEvents::Left_Laser_Speed;
+		return ShowEvents::Left_Laser_Speed;
 	case RIGHTLASERSPEED:
-		return SerialEvents::Right_Laser_Speed;
-	case SETUPEVENTS:
-		return SerialEvents::Setup_Events;
-	case TURNOFFLIGHTS:
-		return SerialEvents::Turn_Off_Lights;
-	case LEFTCOLOR:
-		return SerialEvents::Left_Color;
-	case RIGHTCOLOR:
-		return SerialEvents::Right_Color;
-	case CHROMAEVENT:
-		return SerialEvents::Chroma_Event;
+		return ShowEvents::Right_Laser_Speed;
 	default:
-		return SerialEvents::Error;
+		return ShowEvents::Error;
 	}
 }
 
@@ -95,9 +104,10 @@ t_lightEvent * LightToSerialParser::parseMessage()
 	// Ev_0 has bits are something like 1111xxxx
     if (ev_0 > 239)
     {
-		message->event_name = nameToLightEvent(ev_0);
-		if (message->event_name == SerialEvents::Left_Color ||
-			message->event_name == SerialEvents::Right_Color)
+		message->event_type = SETUP_EVENTS;
+		message->event_name = nameToSetupEvent(ev_0);
+		if (message->event_name == SetupEvents::Left_Color ||
+			message->event_name == SetupEvents::Right_Color)
 		{
 			byteToRGB(&message->color, ev_1);
 		} 
@@ -110,7 +120,8 @@ t_lightEvent * LightToSerialParser::parseMessage()
 	// So just 1100yyyy, 1101yyyy, 1110yyyy since 1111xxxx has already been handled
     else if(ev_0 > 191)
 	{
-		message->event_name = nameToLightEvent(ev_0 >> 4);
+		message->event_type = SHOW_EVENTS;
+		message->event_name = nameToShowEvent(ev_0 >> 4);
 		message->event_value = ev_0 & 15;
 	}
 	// Ev_0 bits are something like xxxxyyyy
@@ -119,8 +130,9 @@ t_lightEvent * LightToSerialParser::parseMessage()
 	// 0000, ..., 1011 event
 	else
 	{
+		message->event_type = SHOW_EVENTS;
 		message->light_group = valToLightGroup(ev_0 >> 4);
-		message->event_name = nameToLightEvent(ev_0 & 15);
+		message->event_name = nameToShowEvent(ev_0 & 15);
 		byteToRGB(&message->color, ev_1);
 	}
 

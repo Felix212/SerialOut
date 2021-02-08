@@ -14,7 +14,8 @@ private:
   // second part of event to handle
   byte ev_1;
   void byteToRGB(CRGB *, byte);
-  SerialEvents nameToLightEvent(byte);
+  SetupEvents nameToSetupEvent(byte);
+  ShowEvents nameToShowEvent(byte);
   LightGroup valToLightGroup(byte);
 public:
   LightToSerialParser();
