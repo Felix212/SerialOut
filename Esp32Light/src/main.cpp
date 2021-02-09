@@ -11,11 +11,6 @@ CRGBArray<TOTAL_LEDS> support_array;
 size_t total_controllers = 7;
 LightController *stripeControllers[7];
 
-uint32_t laser_left_timer_start;
-uint32_t laser_right_timer_start;
-uint32_t laser_left_time_update;
-uint32_t laser_right_time_update;
-
 uint32_t current_mills_cached;
 uint32_t frame_time_start_millis;
 
@@ -64,97 +59,11 @@ void reset_controllers()
 
 void init_controllers()
 {
-    int valuesMinMax[] = {0, 0, 0, 0, 0, 0, 0, 0};
-    if (CUSTOM_SPLITS)
-    {
-        valuesMinMax[0] = LEDSTART;
-        valuesMinMax[1] = LEDSPLIT1;
-        valuesMinMax[2] = LEDSPLIT2;
-        valuesMinMax[3] = LEDSPLIT3;
-        valuesMinMax[4] = LEDSPLIT4;
-        valuesMinMax[5] = LEDSPLIT5;
-        valuesMinMax[6] = LEDSPLIT6;
-        valuesMinMax[7] = LEDEND;
-    }
-    else
-    {
-        int increment = TOTAL_LEDS / 7;
-        int missing_leds = TOTAL_LEDS - increment * 7;
+    size_t valuesMinMax[] = {0, 0, 0, 0, 0, 0, 0, 0};
 
-        for (size_t i = 1; i < 8; ++i)
-        {
-            valuesMinMax[i] = valuesMinMax[i - 1] + increment;
-        }
+    calculate_led_splits(valuesMinMax);
 
-        switch (missing_leds)
-        {
-        // BackTopLaser
-        case 1:
-            valuesMinMax[1] += 0;
-            valuesMinMax[2] += 0;
-            valuesMinMax[3] += 0;
-            valuesMinMax[4] += 1;
-            valuesMinMax[5] += 1;
-            valuesMinMax[6] += 1;
-            valuesMinMax[7] += 1;
-            break;
-        // Both Lasers
-        case 2:
-            valuesMinMax[1] += 0;
-            valuesMinMax[2] += 1;
-            valuesMinMax[3] += 1;
-            valuesMinMax[4] += 1;
-            valuesMinMax[5] += 1;
-            valuesMinMax[6] += 2;
-            valuesMinMax[7] += 2;
-            break;
-        // Both Lasers - BackTopLaser
-        case 3:
-            valuesMinMax[1] += 0;
-            valuesMinMax[2] += 1;
-            valuesMinMax[3] += 1;
-            valuesMinMax[4] += 2;
-            valuesMinMax[5] += 2;
-            valuesMinMax[6] += 3;
-            valuesMinMax[7] += 3;
-            break;
-        case 4:
-            // Both Lasers - Both Center Lights
-            valuesMinMax[1] += 0;
-            valuesMinMax[2] += 1;
-            valuesMinMax[3] += 2;
-            valuesMinMax[4] += 2;
-            valuesMinMax[5] += 3;
-            valuesMinMax[6] += 4;
-            valuesMinMax[7] += 4;
-            break;
-        // Both Lasers - Both Center Lights - BackTopLaser
-        case 5:
-            valuesMinMax[1] += 0;
-            valuesMinMax[2] += 1;
-            valuesMinMax[3] += 2;
-            valuesMinMax[4] += 3;
-            valuesMinMax[5] += 4;
-            valuesMinMax[6] += 5;
-            valuesMinMax[7] += 5;
-            break;
-        // Both Lasers - Both Center Lights - Both RingLights
-        case 6:
-            valuesMinMax[1] += 1;
-            valuesMinMax[2] += 2;
-            valuesMinMax[3] += 3;
-            valuesMinMax[4] += 3;
-            valuesMinMax[5] += 4;
-            valuesMinMax[6] += 5;
-            valuesMinMax[7] += 6;
-            break;
-
-        default:
-            break;
-        }
-    }
-
-    for (int i = 0; i < 7; ++i)
+    for (size_t i = 0; i < 7; ++i)
     {
         stripeControllers[i] = new LightController(&support_array, valuesMinMax[i], valuesMinMax[i + 1]);
     }
@@ -173,6 +82,7 @@ void loop()
         free(current_event);
     }
 
+    // Update Leds Controllers
     for (size_t i = 0; i < total_controllers; ++i)
     {
         stripeControllers[i]->update(current_mills_cached);
@@ -278,6 +188,18 @@ void handleEvent()
             event_status.flash = 0;
             applyEventToGroup();
             break;
+            /*
+        case ShowEvents::Left_Laser_Speed:
+            leftLaser.laserSpeed = event_value;
+            laser_left_time_update = 151 / leftLaser.laserSpeed;
+
+            break;
+
+        case ShowEvents::Right_Laser_Speed:
+            rightLaser.laserSpeed = event_value;
+            laser_right_time_update = 151 / rightLaser.laserSpeed;
+        break;
+        */
         default:
             break;
         }
@@ -309,89 +231,3 @@ void applyEventToGroup()
         break;
     }
 }
-
-/*
-init_lasers();
-case ShowEvents::Left_Laser_Speed:
-    leftLaser.laserSpeed = event_value;
-    laser_left_time_update = 151 / leftLaser.laserSpeed;
-
-    break;
-
-case ShowEvents::Right_Laser_Speed:
-    rightLaser.laserSpeed = event_value;
-    laser_right_time_update = 151 / rightLaser.laserSpeed;
-break;
-void init_lasers()
-{
-    leftLaser.strip_part_index = 1;
-    rightLaser.strip_part_index = 5;
-    laser_left_timer_start = 0;
-    laser_right_timer_start = 0;
-    laser_left_time_update = 151 / leftLaser.laserSpeed;
-    laser_right_time_update = 151 / rightLaser.laserSpeed;
-}
-
-void ledwalkleft(struct Laser *laser)
-{
-    current_handler = &stripeControl[laser->strip_part_index];
-
-    if (current_handler->status.on == 0)
-    {
-        return;
-    }
-
-    if (current_handler->from + laser->laserIndex == current_handler->to)
-    {
-        laser->laserIndex = 0;
-        laser->toggle = !laser->toggle;
-    }
-
-    if (current_mills_cached - laser_left_timer_start > laser_left_time_update)
-    {
-        if (laser->toggle)
-        {
-            support_array[current_handler->from + laser->laserIndex] = CRGB::Black;
-        }
-        else
-        {
-            support_array[current_handler->from + laser->laserIndex] = stripeControl[laser->strip_part_index].actual_color;
-        }
-
-        laser->laserIndex++;
-        laser_left_timer_start = current_mills_cached;
-    }
-}
-
-void ledwalkright(struct Laser *laser)
-{
-    current_handler = &stripeControl[laser->strip_part_index];
-
-    if (current_handler->status.ON == 0)
-    {
-        return;
-    }
-
-    if (current_handler->to - laser->laserIndex - 1 < current_handler->from)
-    {
-        laser->laserIndex = 0;
-        laser->toggle = !laser->toggle;
-    }
-
-    if (current_mills_cached - laser_right_timer_start > laser_right_time_update)
-    {
-        if (laser->toggle)
-        {
-            support_array[current_handler->to - laser->laserIndex - 1] = CRGB::Black;
-        }
-        else
-        {
-            support_array[current_handler->to - laser->laserIndex - 1] = stripeControl[laser->strip_part_index].actual_color;
-        }
-
-        laser->laserIndex++;
-        laser_right_timer_start = current_mills_cached;
-    }
-}
-
-*/

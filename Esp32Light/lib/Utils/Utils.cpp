@@ -1,5 +1,97 @@
 #include "Utils.hpp"
 
+void calculate_led_splits(size_t *parts)
+{
+    if (CUSTOM_SPLITS)
+    {
+        parts[0] = LEDSTART;
+        parts[1] = LEDSPLIT1;
+        parts[2] = LEDSPLIT2;
+        parts[3] = LEDSPLIT3;
+        parts[4] = LEDSPLIT4;
+        parts[5] = LEDSPLIT5;
+        parts[6] = LEDSPLIT6;
+        parts[7] = LEDEND;
+    }
+    else
+    {
+        int increment = TOTAL_LEDS / 7;
+        int missing_leds = TOTAL_LEDS - increment * 7;
+
+        for (size_t i = 1; i < 8; ++i)
+        {
+            parts[i] = parts[i - 1] + increment;
+        }
+
+        switch (missing_leds)
+        {
+        // BackTopLaser
+        case 1:
+            parts[1] += 0;
+            parts[2] += 0;
+            parts[3] += 0;
+            parts[4] += 1;
+            parts[5] += 1;
+            parts[6] += 1;
+            parts[7] += 1;
+            break;
+        // Both Lasers
+        case 2:
+            parts[1] += 0;
+            parts[2] += 1;
+            parts[3] += 1;
+            parts[4] += 1;
+            parts[5] += 1;
+            parts[6] += 2;
+            parts[7] += 2;
+            break;
+        // Both Lasers - BackTopLaser
+        case 3:
+            parts[1] += 0;
+            parts[2] += 1;
+            parts[3] += 1;
+            parts[4] += 2;
+            parts[5] += 2;
+            parts[6] += 3;
+            parts[7] += 3;
+            break;
+        case 4:
+            // Both Lasers - Both Center Lights
+            parts[1] += 0;
+            parts[2] += 1;
+            parts[3] += 2;
+            parts[4] += 2;
+            parts[5] += 3;
+            parts[6] += 4;
+            parts[7] += 4;
+            break;
+        // Both Lasers - Both Center Lights - BackTopLaser
+        case 5:
+            parts[1] += 0;
+            parts[2] += 1;
+            parts[3] += 2;
+            parts[4] += 3;
+            parts[5] += 4;
+            parts[6] += 5;
+            parts[7] += 5;
+            break;
+        // Both Lasers - Both Center Lights - Both RingLights
+        case 6:
+            parts[1] += 1;
+            parts[2] += 2;
+            parts[3] += 3;
+            parts[4] += 3;
+            parts[5] += 4;
+            parts[6] += 5;
+            parts[7] += 6;
+            break;
+
+        default:
+            break;
+        }
+    }
+}
+
 // Checks leds by turning all them on with colors RED -> GREEN -> BLUE
 void checkLeds(CRGB *actual_leds, int from, int to)
 {
