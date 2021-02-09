@@ -3,6 +3,7 @@
 #include "LedUtils.hpp"
 #include "SupportStructures.hpp"
 #include "LightToSerialParser.hpp"
+#include "LightController.hpp"
 
 static CRGB defaultColorLEFT = CRGB(255, 0, 0);
 static CRGB defaultColorRIGHT = CRGB(0, 125, 255);
@@ -14,5 +15,6 @@ void fadeFlashLight();
 void cacheLeftColor(uint8_t r, uint8_t g, uint8_t b);
 void cacheRightColor(uint8_t r, uint8_t g, uint8_t b);
 void controlLight();
+void handleEvent();
 void ledwalkleft(t_laser *);
 void ledwalkright(t_laser *);

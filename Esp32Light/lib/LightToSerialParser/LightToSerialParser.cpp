@@ -105,9 +105,9 @@ t_lightEvent * LightToSerialParser::parseMessage()
     if (ev_0 > 239)
     {
 		message->event_type = SETUP_EVENTS;
-		message->event_name = nameToSetupEvent(ev_0);
-		if (message->event_name == SetupEvents::Left_Color ||
-			message->event_name == SetupEvents::Right_Color)
+		message->setup_name = nameToSetupEvent(ev_0);
+		if (message->setup_name == SetupEvents::Left_Color ||
+			message->setup_name == SetupEvents::Right_Color)
 		{
 			byteToRGB(&message->color, ev_1);
 		} 
@@ -121,7 +121,7 @@ t_lightEvent * LightToSerialParser::parseMessage()
     else if(ev_0 > 191)
 	{
 		message->event_type = SHOW_EVENTS;
-		message->event_name = nameToShowEvent(ev_0 >> 4);
+		message->show_name = nameToShowEvent(ev_0 >> 4);
 		message->event_value = ev_0 & 15;
 	}
 	// Ev_0 bits are something like xxxxyyyy
@@ -132,7 +132,7 @@ t_lightEvent * LightToSerialParser::parseMessage()
 	{
 		message->event_type = SHOW_EVENTS;
 		message->light_group = valToLightGroup(ev_0 >> 4);
-		message->event_name = nameToShowEvent(ev_0 & 15);
+		message->show_name = nameToShowEvent(ev_0 & 15);
 		byteToRGB(&message->color, ev_1);
 	}
 

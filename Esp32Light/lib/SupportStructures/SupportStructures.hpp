@@ -4,45 +4,22 @@
 
 typedef struct StatusLight
 {
-    int FADE = 0;
-    int FLASH = 0;
-    int ON = 0;
+    int fade;
+    int flash;
+    int on;
 } t_status;
-
-typedef struct LightController
-{
-    // in which status is the light
-    t_status status;
-
-    // begin led
-    int from;
-    // to -1 is last led of this light
-    int to;
-
-    // time of when light was turn on
-    uint32_t turn_up_millis;
-
-    // flag to turn of light after minimum time passed
-    bool have_to_turn_off;
-
-    // color of light
-    CRGB color;
-    CRGB color_flash;
-    CRGB actual_color;
-} t_light_controller;
 
 typedef struct CacheColors
 {
-    CRGB color_left;
     CRGB color_left_flash;
-    CRGB color_right;
     CRGB color_right_flash;
 } t_cached_colors;
 
 typedef struct Event
 {
     int event_type;
-    SerialEvents event_name;
+    SetupEvents setup_name;
+    ShowEvents show_name;
     LightGroup light_group;
     int event_value;
     CRGB color;
