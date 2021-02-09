@@ -43,9 +43,6 @@
 #define LEDEND 228     // RingLaser
 
 // --------------------------------------------------- End Setup ---------------------------------------------------- //
-
-#define TIME_BETWEEN_UPDATES (int)(1000 / UPDATES_PER_SECOND)
-
 // time between every fade update to led. Also flash.
 #define FADE_TIME_MILLIS 20
 

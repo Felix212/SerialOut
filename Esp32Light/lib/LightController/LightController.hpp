@@ -1,10 +1,11 @@
+#pragma once
+
 #include "Globals.hpp"
 #include "SupportStructures.hpp"
 
 class LightController
 {
-private:
-    int x;
+protected:
     CRGBSet *support_array;
     // in which status is the light
     t_status status;
@@ -21,7 +22,8 @@ private:
     
     // time of when light was turn on
     uint32_t status_start_time;
-    uint32_t last_update_time;
+    uint32_t last_fade_time;
+    uint32_t current_time;
 
     // flag to turn of light after minimum time passed
     bool have_to_turn_off;
@@ -32,6 +34,8 @@ private:
     void update_status(t_status, uint32_t);
     void reset_colors();
     void reset_status();
+    void turn_off_leds();
+    void compute_actual_color();
 
 public:
     LightController(CRGBSet *, size_t, size_t);

@@ -10,9 +10,11 @@ CRGBArray<TOTAL_LEDS> support_array;
 
 size_t total_controllers = 7;
 LightController *stripeControllers[7];
+LaserController *laserControllers[2];
 
 uint32_t current_mills_cached;
 uint32_t frame_time_start_millis;
+uint32_t time_between_frame_updates;
 
 LightToSerialParser *parser;
 t_lightEvent *current_event;
@@ -21,6 +23,8 @@ CRGB color_to_use;
 
 void setup()
 {
+    time_between_frame_updates = 1000 / UPDATES_PER_SECOND;
+
     parser = new LightToSerialParser();
 
     cached_colors.left = defaultColorLEFT;
@@ -63,10 +67,19 @@ void init_controllers()
 
     calculate_led_splits(valuesMinMax);
 
-    for (size_t i = 0; i < 7; ++i)
-    {
-        stripeControllers[i] = new LightController(&support_array, valuesMinMax[i], valuesMinMax[i + 1]);
-    }
+    stripeControllers[0] = new LightController(&support_array, valuesMinMax[0], valuesMinMax[1]);
+
+    stripeControllers[1] = new LaserController(&support_array, valuesMinMax[1], valuesMinMax[2], true, 1);
+    laserControllers[0] = (LaserController *)stripeControllers[1];
+
+    stripeControllers[2] = new LightController(&support_array, valuesMinMax[2], valuesMinMax[3]);
+    stripeControllers[3] = new LightController(&support_array, valuesMinMax[3], valuesMinMax[4]);
+    stripeControllers[4] = new LightController(&support_array, valuesMinMax[4], valuesMinMax[5]);
+
+    stripeControllers[5] = new LaserController(&support_array, valuesMinMax[5], valuesMinMax[6], false, 1);
+    laserControllers[1] = (LaserController *)stripeControllers[5];
+
+    stripeControllers[6] = new LightController(&support_array, valuesMinMax[6], valuesMinMax[7]);
 }
 
 void loop()
@@ -85,11 +98,18 @@ void loop()
     // Update Leds Controllers
     for (size_t i = 0; i < total_controllers; ++i)
     {
-        stripeControllers[i]->update(current_mills_cached);
+        if (i == 1 || i == 5)
+        {
+            ((LaserController *)stripeControllers[i])->update(current_mills_cached);
+        }
+        else
+        {
+            stripeControllers[i]->update(current_mills_cached);
+        }
     }
 
     // coloring actual leds
-    if (current_mills_cached - frame_time_start_millis > TIME_BETWEEN_UPDATES)
+    if (current_mills_cached - frame_time_start_millis > time_between_frame_updates)
     {
         // update leds with current settings
         update_leds(leds, support_array);
@@ -188,18 +208,12 @@ void handleEvent()
             event_status.flash = 0;
             applyEventToGroup();
             break;
-            /*
         case ShowEvents::Left_Laser_Speed:
-            leftLaser.laserSpeed = event_value;
-            laser_left_time_update = 151 / leftLaser.laserSpeed;
-
+            laserControllers[0]->set_speed(current_event->event_value, current_mills_cached);
             break;
-
         case ShowEvents::Right_Laser_Speed:
-            rightLaser.laserSpeed = event_value;
-            laser_right_time_update = 151 / rightLaser.laserSpeed;
-        break;
-        */
+            laserControllers[1]->set_speed(current_event->event_value, current_mills_cached);
+            break;
         default:
             break;
         }

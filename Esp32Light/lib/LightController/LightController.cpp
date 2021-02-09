@@ -47,7 +47,7 @@ void LightController::reset_status()
 void LightController::update_status(t_status new_status, uint32_t time)
 {
     this->status_start_time = time;
-    this->last_update_time = time;
+    this->last_fade_time = time;
 
     if (new_status.on)
     {
@@ -93,6 +93,39 @@ void LightController::fadeLight()
     }
 }
 
+void LightController::compute_actual_color()
+{
+    if (this->have_to_turn_off)
+    {
+        if (this->current_time - this->status_start_time > MINIUM_TURN_ON_LIGHT_TIME)
+        {
+            this->have_to_turn_off = false;
+            this->status.on = false;
+            this->actual_color = CRGB::Black;
+            this->color_changed = true;
+        }
+    }
+    else if (this->status.fade)
+    {
+        if(this->current_time - this->last_fade_time > FADE_TIME_MILLIS){
+            this->fadeLight();
+            this->last_fade_time = this->current_time;
+        }
+    }
+    else if (this->status.flash)
+    {
+        if(this->current_time - this->last_fade_time > FADE_TIME_MILLIS){
+            this->flashLight();
+            this->last_fade_time = this->current_time;
+        }            
+    }
+}
+
+void LightController::turn_off_leds()
+{
+    (*support_array)(this->from, this->to - 1) = CRGB::Black;
+}
+
 // ------------------------------------------------- Public Methods ------------------------------------------------- //
 void LightController::handle_event(t_status new_status, CRGB new_color, uint32_t event_time)
 {
@@ -108,36 +141,16 @@ void LightController::reset_controller()
 {
     this->reset_status();
     this->reset_colors();
+    this->turn_off_leds();
 }
 
 void LightController::update(uint32_t current_millis)
 {
+    this->current_time = current_millis;
+
     if (this->status.on)
     {
-        if (this->have_to_turn_off)
-        {
-            if (current_millis - this->status_start_time > MINIUM_TURN_ON_LIGHT_TIME)
-            {
-                this->have_to_turn_off = false;
-                this->status.on = false;
-                this->actual_color = CRGB::Black;
-                this->color_changed = true;
-            }
-        }
-        else if (this->status.fade)
-        {
-            if(current_millis - this->last_update_time > FADE_TIME_MILLIS){
-                this->fadeLight();
-                this->last_update_time = current_millis;
-            }
-        }
-        else if (this->status.flash)
-        {
-            if(current_millis - this->last_update_time > FADE_TIME_MILLIS){
-                this->flashLight();
-                this->last_update_time = current_millis;
-            }            
-        }
+        this->compute_actual_color();
 
         // Apply current color to support vector
         if (this->color_changed)

@@ -4,6 +4,7 @@
 #include "SupportStructures.hpp"
 #include "LightToSerialParser.hpp"
 #include "LightController.hpp"
+#include "LaserController.hpp"
 
 static CRGB defaultColorLEFT = CRGB(255, 0, 0);
 static CRGB defaultColorRIGHT = CRGB(0, 125, 255);

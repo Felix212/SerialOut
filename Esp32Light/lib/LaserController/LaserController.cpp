@@ -1,82 +1,83 @@
+#include "LaserController.hpp"
 
-/*
-uint32_t laser_left_timer_start;
-uint32_t laser_right_timer_start;
-uint32_t laser_left_time_update;
-uint32_t laser_right_time_update;
-
-init_lasers();
-
-void init_lasers()
+LaserController::LaserController(CRGBSet *leds, size_t from, size_t to, bool direction, size_t speed) : LightController::LightController(leds, from, to)
 {
-    leftLaser.strip_part_index = 1;
-    rightLaser.strip_part_index = 5;
-    laser_left_timer_start = 0;
-    laser_right_timer_start = 0;
-    laser_left_time_update = 151 / leftLaser.laserSpeed;
-    laser_right_time_update = 151 / rightLaser.laserSpeed;
+    this->direction = direction;
+    this->current_offset = 0;
+    set_speed(speed, 0);
 }
 
-void ledwalkleft(struct Laser *laser)
+void LaserController::set_speed(size_t new_speed, uint32_t time)
 {
-    current_handler = &stripeControl[laser->strip_part_index];
-
-    if (current_handler->status.on == 0)
+    this->last_laser_time = time;
+    if (new_speed == 0)
     {
-        return;
+        this->current_offset = 0;
+        this->can_shift = false;
     }
-
-    if (current_handler->from + laser->laserIndex == current_handler->to)
+    else
     {
-        laser->laserIndex = 0;
-        laser->toggle = !laser->toggle;
+        time_between_laser_updates = 151 / new_speed;
+        this->can_shift = true;
     }
+}
 
-    if (current_mills_cached - laser_left_timer_start > laser_left_time_update)
+void LaserController::updateOffset()
+{
+    // Apply current color to support vector
+    // true -> to right
+    // 100100 -> 010010
+    // false -> to left
+    // 100100 -> 001001
+    if (direction)
     {
-        if (laser->toggle)
+        this->current_offset = (this->current_offset + 1) % 3;
+    }
+    else
+    {
+        this->current_offset = this->current_offset - 1;
+        if (this->current_offset < 0)
         {
-            support_array[current_handler->from + laser->laserIndex] = CRGB::Black;
+            this->current_offset = 2;
+        }
+    }
+}
+
+void LaserController::colorLeds()
+{
+    for (int i = this->from; i < this->to; ++i)
+    {
+        if ((i - this->from) % 3 == this->current_offset)
+        {
+            (*support_array)[i] = this->actual_color;
         }
         else
         {
-            support_array[current_handler->from + laser->laserIndex] = stripeControl[laser->strip_part_index].actual_color;
+            (*support_array)[i] = CRGB::Black;
         }
-
-        laser->laserIndex++;
-        laser_left_timer_start = current_mills_cached;
     }
 }
 
-void ledwalkright(struct Laser *laser)
+void LaserController::update(uint32_t current_millis)
 {
-    current_handler = &stripeControl[laser->strip_part_index];
+    this->current_time = current_millis;
 
-    if (current_handler->status.ON == 0)
+    if (this->status.on)
     {
-        return;
-    }
+        this->compute_actual_color();
 
-    if (current_handler->to - laser->laserIndex - 1 < current_handler->from)
-    {
-        laser->laserIndex = 0;
-        laser->toggle = !laser->toggle;
-    }
-
-    if (current_mills_cached - laser_right_timer_start > laser_right_time_update)
-    {
-        if (laser->toggle)
+        if (this->current_time - this->last_laser_time > this->time_between_laser_updates)
         {
-            support_array[current_handler->to - laser->laserIndex - 1] = CRGB::Black;
+            if (this->can_shift)
+            {
+                this->updateOffset();
+            }
+            this->colorLeds();
+            this->last_laser_time = this->current_time;
         }
-        else
+        else if (this->color_changed)
         {
-            support_array[current_handler->to - laser->laserIndex - 1] = stripeControl[laser->strip_part_index].actual_color;
+            this->colorLeds();
         }
-
-        laser->laserIndex++;
-        laser_right_timer_start = current_mills_cached;
     }
 }
-
-*/
