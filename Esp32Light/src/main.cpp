@@ -3,7 +3,7 @@
 // global vars
 t_cached_colors cached_colors;
 
-bool IsChroma = false;
+bool chromaMap = false;
 
 CRGB leds[TOTAL_LEDS];
 CRGBArray<TOTAL_LEDS> support_array;
@@ -25,6 +25,7 @@ uint32_t frame_time_start_millis;
 LightToSerialParser *parser;
 t_lightEvent *current_event;
 t_status event_status;
+CRGB color_to_use;
 
 void setup()
 {
@@ -62,8 +63,7 @@ void reset_controllers()
 {
   for (int i = 0; i < 7; ++i)
   {
-    stripeControllers[i]->reset_status();
-    stripeControllers[i]->reset_colors();
+    stripeControllers[i]->reset_controller();
   }
 }
 
@@ -210,12 +210,12 @@ void loop()
 
 void cacheLeftColor(uint8_t r, uint8_t g, uint8_t b)
 {
-  cached_colors.color_left_flash = CRGB(r, g, b);
+  cached_colors.left = CRGB(r, g, b);
 }
 
 void cacheRightColor(uint8_t r, uint8_t g, uint8_t b)
 {
-  cached_colors.color_right_flash = CRGB(r, g, b);
+  cached_colors.right = CRGB(r, g, b);
 }
 
 void handleEvent()
@@ -229,7 +229,6 @@ void handleEvent()
     case SetupEvents::First_Song_Event:
       break;
     case SetupEvents::Turn_Off_Lights:
-      support_array(0, LEDEND - 1) = CRGB::Black;
       reset_controllers();
       break;
     case SetupEvents::Left_Color:
@@ -245,11 +244,11 @@ void handleEvent()
     case SetupEvents::Chroma_Event:
       if (current_event->event_value == 1)
       {
-        IsChroma = true;
+        chromaMap = true;
       }
       else if (current_event->event_value == 0)
       {
-        IsChroma = false;
+        chromaMap = false;
       }
       break;
     default:
@@ -258,28 +257,58 @@ void handleEvent()
   }
   else if (current_event->event_type == SHOW_EVENTS)
   {
+    //handle chroma
+    if (chromaMap)
+    {
+      color_to_use = current_event->color;
+    }
+    //default colors
+    else if (current_event->show_name == ShowEvents::Right_Color_Fade ||
+             current_event->show_name == ShowEvents::Right_Color_Flash ||
+             current_event->show_name == ShowEvents::Right_Color_On)
+    {
+      color_to_use = cached_colors.right;
+    }
+    else if (current_event->show_name == ShowEvents::Left_Color_Fade ||
+             current_event->show_name == ShowEvents::Left_Color_Flash ||
+             current_event->show_name == ShowEvents::Left_Color_On)
+    {
+      color_to_use = cached_colors.left;
+    }
+    else
+    {
+      color_to_use = CRGB::Black;
+    }
+
     switch (current_event->show_name)
     {
     case ShowEvents::Light_Off:
-    break;
-
+      event_status.on = 0;
+      event_status.flash = 0;
+      event_status.fade = 0;
+      applyEventToGroup();
+      break;
     case ShowEvents::Right_Color_On:
-    break;
-
-    case ShowEvents::Right_Color_Flash:
-    break;
-
-    case ShowEvents::Right_Color_Fade:
-    break;
-
     case ShowEvents::Left_Color_On:
-    break;
-
+      event_status.on = 1;
+      event_status.fade = 0;
+      event_status.flash = 0;
+      applyEventToGroup();
+      break;
+    case ShowEvents::Right_Color_Flash:
     case ShowEvents::Left_Color_Flash:
-    break;
-
+      event_status.on = 1;
+      event_status.fade = 0;
+      event_status.flash = 1;
+      applyEventToGroup();
+      break;
+    case ShowEvents::Right_Color_Fade:
     case ShowEvents::Left_Color_Fade:
-    break;
+      event_status.on = 1;
+      event_status.fade = 1;
+      event_status.flash = 0;
+      applyEventToGroup();
+      break;
 
     case ShowEvents::Left_Laser_Speed:
           leftLaser.laserSpeed = event_value;
@@ -292,109 +321,43 @@ void handleEvent()
       laser_right_time_update = 151 / rightLaser.laserSpeed;
 
     break;
-    case BACKTOPLASER:
-      handler_index = INDEX_BACK_TOP_LASER;
-      controlLight();
-      break;
-    case RINGLASER:
-      handler_index = INDEX_RING_LASER_LEFT;
-      controlLight();
-      handler_index = INDEX_RING_LASER_RIGHT;
-      controlLight();
-      break;
-    case LEFTLASER:
-      handler_index = INDEX_LEFT_LASER;
-      handling_laser = true;
-      controlLight();
-      handling_laser = false;
-      break;
-    case RIGHTLASER:
-      handler_index = INDEX_RIGHT_LASER;
-      handling_laser = true;
-      controlLight();
-      handling_laser = false;
-      break;
-    case CENTERLIGHT:
-      handler_index = INDEX_CENTER_LIGHT_LEFT;
-      controlLight();
-      handler_index = INDEX_CENTER_LIGHT_RIGHT;
-      controlLight();
-      break;
-    // Laser configuration Events
     default:
       break;
     }
   }
 }
 
-void controlLight()
+void applyEventToGroup()
 {
-
-  //handle chroma
-  if (IsChroma)
+  switch (current_event->light_group)
   {
-    if (chromaColor.getAverageLight() != 0)
-    {
-      current_handler->color_flash.setRGB(chromaColor.r,
-                                          chromaColor.g,
-                                          chromaColor.b);
-      current_handler->color.setRGB((uint8_t)((float)chromaColor.r * BRIGHTNESSDIVIDER),
-                                    (uint8_t)((float)chromaColor.g * BRIGHTNESSDIVIDER),
-                                    (uint8_t)((float)chromaColor.b * BRIGHTNESSDIVIDER));
-    }
-  }
-  //default colors
-  else
-  {
-    if (event_value > 0 && event_value < 4)
-    {
-      current_handler->color_flash = cached_colors.color_right_flash;
-      current_handler->color = cached_colors.color_right;
-    }
-
-    if (event_value > 4 && event_value < 8)
-    {
-      current_handler->color_flash = cached_colors.color_left_flash;
-      current_handler->color = cached_colors.color_left;
-    }
-  }
-
-  switch (current_LightEvent)
-  {
-  case LightEvents::Light_Off:
-    current_handler->status.ON = 0;
-    current_handler->status.FLASH = 0;
-    current_handler->status.FADE = 0;
+  case LightGroup::BackTopLaser:
+    stripeControllers[3]->handle_event(event_status, color_to_use, current_mills_cached);
     break;
-  case LightEvents::Right_Color_On:
-  case LightEvents::Left_Color_On:
-    current_handler->status.ON = 1;
-    current_handler->status.FADE = 0;
-    current_handler->status.FLASH = 0;
+  case LightGroup::RingLaser:
+    stripeControllers[0]->handle_event(event_status, color_to_use, current_mills_cached);
+    stripeControllers[6]->handle_event(event_status, color_to_use, current_mills_cached);
     break;
-  case LightEvents::Right_Color_Flash:
-  case LightEvents::Left_Color_Flash:
-    current_handler->status.ON = 1;
-    current_handler->status.FADE = 0;
-    current_handler->status.FLASH = 1;
+  case LightGroup::LeftLaser:
+    stripeControllers[1]->handle_event(event_status, color_to_use, current_mills_cached);
     break;
-  case LightEvents::Right_Color_Fade:
-  case LightEvents::Left_Color_Fade:
-    current_handler->status.ON = 1;
-    current_handler->status.FADE = 1;
-    current_handler->status.FLASH = 0;
+  case LightGroup::RightLaser:
+    stripeControllers[5]->handle_event(event_status, color_to_use, current_mills_cached);
+    break;
+  case LightGroup::CenterLight:
+    stripeControllers[2]->handle_event(event_status, color_to_use, current_mills_cached);
+    stripeControllers[4]->handle_event(event_status, color_to_use, current_mills_cached);
     break;
   default:
     break;
   }
-
 }
 
 void ledwalkleft(struct Laser *laser)
 {
   current_handler = &stripeControl[laser->strip_part_index];
 
-  if (current_handler->status.ON == 0)
+  if (current_handler->status.on == 0)
   {
     return;
   }

@@ -24,15 +24,18 @@ private:
 
     // flag to turn of light after minimum time passed
     bool have_to_turn_off;
+
     void flashLight();
     void fadeLight();
+    void update_color(CRGB);
+    void update_status(t_status, uint32_t);
+    void reset_colors();
+    void reset_status();
 
 public:
     LightController(CRGBSet *, size_t, size_t);
     ~LightController();
     void update(uint32_t);
-    void update_color(CRGB);
-    void reset_colors();
-    void reset_status();
-    void update_status(t_status, uint32_t);
+    void handle_event(t_status, CRGB, uint32_t);
+    void reset_controller();
 };

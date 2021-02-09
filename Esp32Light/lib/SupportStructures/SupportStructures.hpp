@@ -11,8 +11,8 @@ typedef struct StatusLight
 
 typedef struct CacheColors
 {
-    CRGB color_left_flash;
-    CRGB color_right_flash;
+    CRGB left;
+    CRGB right;
 } t_cached_colors;
 
 typedef struct Event

@@ -1,5 +1,6 @@
 #include "LightController.hpp"
 
+// -------------------------------------------------- Constructors -------------------------------------------------- //
 LightController::LightController(CRGBSet *leds, size_t from, size_t to)
 {
     this->support_array = leds;
@@ -14,33 +15,17 @@ LightController::~LightController()
 {
 }
 
-void LightController::update(uint32_t current_millis)
-{
-    if (this->status.on)
-    {
-        if (this->have_to_turn_off)
-        {
-            if (current_millis - this->status_start_time > MINIUM_TURN_ON_LIGHT_TIME)
-            {
-                this->have_to_turn_off = false;
-                this->status.on = 0;
-                (*support_array)(this->from, this->to - 1) = CRGB::Black;
-                this->actual_color = CRGB::Black;
-            }
-        }
-    }
-}
-
+// ------------------------------------------------ Private Methods ------------------------------------------------- //
 void LightController::update_color(CRGB flash_color)
 {
     this->color_changed = true;
 
     this->color_flash.setRGB(flash_color.r,
-                             flash_color.g,
-                             flash_color.b);
+                                flash_color.g,
+                                flash_color.b);
     this->color.setRGB((uint8_t)((float)flash_color.r * BRIGHTNESSDIVIDER),
-                       (uint8_t)((float)flash_color.g * BRIGHTNESSDIVIDER),
-                       (uint8_t)((float)flash_color.b * BRIGHTNESSDIVIDER));
+                        (uint8_t)((float)flash_color.g * BRIGHTNESSDIVIDER),
+                        (uint8_t)((float)flash_color.b * BRIGHTNESSDIVIDER));
 }
 
 void LightController::reset_colors()
@@ -109,7 +94,36 @@ void LightController::fadeLight()
     {
         (*support_array)(this->from, this->to - 1) = CRGB::Black;
         this->actual_color = CRGB::Black;
-        this->status.fade = 0;
-        this->status.on = 0;
+        reset_status();
+    }
+}
+
+// ------------------------------------------------- Public Methods ------------------------------------------------- //
+void LightController::handle_event(t_status new_status, CRGB new_color, uint32_t event_time)
+{
+    // If color is not black
+    if (new_color.getAverageLight() > 0)
+    {
+        this->update_color(new_color);
+    }
+    this->update_status(new_status, event_time);
+}
+
+void LightController::reset_controller()
+{
+    this->reset_status();
+    this->reset_colors();
+}
+
+void LightController::update(uint32_t current_millis)
+{
+    if (this->have_to_turn_off)
+    {
+        if (current_millis - this->status_start_time > MINIUM_TURN_ON_LIGHT_TIME)
+        {
+            this->have_to_turn_off = false;
+            (*support_array)(this->from, this->to - 1) = CRGB::Black;
+            this->actual_color = CRGB::Black;
+        }
     }
 }
