@@ -6,7 +6,6 @@ LightController::LightController(CRGBSet *leds, size_t from, size_t to)
     this->support_array = leds;
     this->from = from;
     this->to = to;
-    this->color_changed = true;
     this->reset_colors();
     this->reset_status();
 }
@@ -42,16 +41,19 @@ void LightController::reset_status()
     this->status.fade = 0;
     this->status.flash = 0;
     this->status.on = 0;
+    this->have_to_turn_off = false;
 }
 
 void LightController::update_status(t_status new_status, uint32_t time)
 {
-    this->status = new_status;
     this->status_start_time = time;
+    this->last_update_time = time;
 
-    if (this->status.on == 1)
+    if (new_status.on)
     {
-        if (this->status.flash == 1)
+        this->status = new_status;
+        this->have_to_turn_off = false;
+        if (new_status.flash)
         {
             this->actual_color = this->color_flash;
         }
@@ -63,36 +65,29 @@ void LightController::update_status(t_status new_status, uint32_t time)
     else
     {
         this->have_to_turn_off = true;
+        this->status.fade = false;
+        this->status.flash = false;
     }
 }
 
 void LightController::flashLight()
 {
     this->actual_color = this->actual_color.fadeToBlackBy(1);
+    this->color_changed = true;
 
-    if (this->actual_color.getLuma() > this->color.getLuma())
+    if (this->actual_color.getLuma() < this->color.getLuma())
     {
-        (*support_array)(this->from, this->to - 1) = this->actual_color;
-    }
-    else
-    {
-        (*support_array)(this->from, this->to - 1) = this->color;
         this->actual_color = this->color;
-        this->status.flash = 0;
+        this->status.flash = false;
     }
 }
 
 void LightController::fadeLight()
 {
     this->actual_color = this->actual_color.fadeToBlackBy(1);
-
-    if (this->actual_color.getAverageLight() > 16)
+    this->color_changed = true;
+    if (this->actual_color.getAverageLight() < 16)
     {
-        (*support_array)(this->from, this->to - 1) = this->actual_color;
-    }
-    else
-    {
-        (*support_array)(this->from, this->to - 1) = CRGB::Black;
         this->actual_color = CRGB::Black;
         reset_status();
     }
@@ -117,13 +112,37 @@ void LightController::reset_controller()
 
 void LightController::update(uint32_t current_millis)
 {
-    if (this->have_to_turn_off)
+    if (this->status.on)
     {
-        if (current_millis - this->status_start_time > MINIUM_TURN_ON_LIGHT_TIME)
+        if (this->have_to_turn_off)
         {
-            this->have_to_turn_off = false;
-            (*support_array)(this->from, this->to - 1) = CRGB::Black;
-            this->actual_color = CRGB::Black;
+            if (current_millis - this->status_start_time > MINIUM_TURN_ON_LIGHT_TIME)
+            {
+                this->have_to_turn_off = false;
+                this->status.on = false;
+                this->actual_color = CRGB::Black;
+                this->color_changed = true;
+            }
+        }
+        else if (this->status.fade)
+        {
+            if(current_millis - this->last_update_time > FADE_TIME_MILLIS){
+                this->fadeLight();
+                this->last_update_time = current_millis;
+            }
+        }
+        else if (this->status.flash)
+        {
+            if(current_millis - this->last_update_time > FADE_TIME_MILLIS){
+                this->flashLight();
+                this->last_update_time = current_millis;
+            }            
+        }
+
+        // Apply current color to support vector
+        if (this->color_changed)
+        {
+            (*support_array)(this->from, this->to - 1) = this->actual_color;
         }
     }
 }

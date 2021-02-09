@@ -21,6 +21,7 @@ private:
     
     // time of when light was turn on
     uint32_t status_start_time;
+    uint32_t last_update_time;
 
     // flag to turn of light after minimum time passed
     bool have_to_turn_off;

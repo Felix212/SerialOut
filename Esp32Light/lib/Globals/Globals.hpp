@@ -10,7 +10,7 @@
 #define TOTAL_LEDS_STRIP_2 120
 
 // ------------------------------------------------------ Leds ------------------------------------------------------ //
-#define TOTAL_LEDS TOTAL_LEDS_STRIP_1 + TOTAL_LEDS_STRIP_2
+#define TOTAL_LEDS (TOTAL_LEDS_STRIP_1 + TOTAL_LEDS_STRIP_2)
 
 // If LEDTYPE is NEOPIXEL it is necessary to edit file main.cpp in line
 // FastLED.addLeds<LEDTYPE, DATA_PIN, GRB>(leds, NUM_LEDS);
@@ -33,7 +33,7 @@
 // A full stripe will be divided in 7 parts
 // RingLaserLeft - LeftLaser - CenterLightLeft - BackTopLaser - CenterLightRight - RightLaser - RingLaserRight
 
-#define LEDSTART 0
+#define LEDSTART 10
 #define LEDSPLIT1 34   // RingLaser # LEDSTART --- LEDSPLIT1
 #define LEDSPLIT2 66   // LeftLaser # LEDSPLIT1 --- LEDSPLIT2
 #define LEDSPLIT3 98   // Centerlight # etc.
@@ -45,6 +45,8 @@
 // --------------------------------------------------- End Setup ---------------------------------------------------- //
 
 #define TIME_BETWEEN_UPDATES (int)(1000 / UPDATES_PER_SECOND)
+
+// time between every fade update to led. Also flash.
 #define FADE_TIME_MILLIS 20
 
 // When a command to turn on a light comes, minumim of this milliseconds that light will be on
@@ -61,12 +63,12 @@
 #define LIGHT_OFF 0
 
 #define RIGHT_COLOR_ON 1
-#define RIGHT_COLOR_FADE 2
-#define RIGHT_COLOR_FLASH 3
+#define RIGHT_COLOR_FLASH 2
+#define RIGHT_COLOR_FADE 3
 
 #define LEFT_COLOR_ON 5
-#define LEFT_COLOR_FADE 6
-#define LEFT_COLOR_FLASH 7
+#define LEFT_COLOR_FLASH 6
+#define LEFT_COLOR_FADE 7
 
 #define LEFTLASERSPEED 12
 #define RIGHTLASERSPEED 13

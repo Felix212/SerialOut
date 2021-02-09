@@ -2,6 +2,7 @@
 
 #include "Globals.hpp"
 #include "SupportStructures.hpp"
+#include "Utils.hpp"
 
 class LightToSerialParser
 {
@@ -13,10 +14,6 @@ private:
   byte ev_0;
   // second part of event to handle
   byte ev_1;
-  void byteToRGB(CRGB *, byte);
-  SetupEvents nameToSetupEvent(byte);
-  ShowEvents nameToShowEvent(byte);
-  LightGroup valToLightGroup(byte);
 public:
   LightToSerialParser();
   void readData();

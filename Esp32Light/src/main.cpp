@@ -11,9 +11,6 @@ CRGBArray<TOTAL_LEDS> support_array;
 size_t total_controllers = 7;
 LightController *stripeControllers[7];
 
-t_laser leftLaser;
-t_laser rightLaser;
-
 uint32_t laser_left_timer_start;
 uint32_t laser_right_timer_start;
 uint32_t laser_left_time_update;
@@ -31,12 +28,10 @@ void setup()
 {
     parser = new LightToSerialParser();
 
-    cacheLeftColor(defaultColorLEFT.r, defaultColorLEFT.g, defaultColorLEFT.b);
-    cacheRightColor(defaultColorRIGHT.r, defaultColorRIGHT.g, defaultColorRIGHT.b);
+    cached_colors.left = defaultColorLEFT;
+    cached_colors.right = defaultColorRIGHT;
 
     init_controllers();
-
-    init_lasers();
 
     // FastLED.addLeds<LEDTYPE, DATA_PIN, GRB>(leds, NUM_LEDS);
     FastLED.addLeds<LEDTYPE, PIN_LED_STRIP_1>(leds, 0, TOTAL_LEDS_STRIP_1);
@@ -61,7 +56,7 @@ void setup()
 
 void reset_controllers()
 {
-    for (int i = 0; i < 7; ++i)
+    for (size_t i = 0; i < total_controllers; ++i)
     {
         stripeControllers[i]->reset_controller();
     }
@@ -163,18 +158,6 @@ void init_controllers()
     {
         stripeControllers[i] = new LightController(&support_array, valuesMinMax[i], valuesMinMax[i + 1]);
     }
-
-    reset_controllers();
-}
-
-void init_lasers()
-{
-    leftLaser.strip_part_index = 1;
-    rightLaser.strip_part_index = 5;
-    laser_left_timer_start = 0;
-    laser_right_timer_start = 0;
-    laser_left_time_update = 151 / leftLaser.laserSpeed;
-    laser_right_time_update = 151 / rightLaser.laserSpeed;
 }
 
 void loop()
@@ -208,16 +191,6 @@ void loop()
     }
 }
 
-void cacheLeftColor(uint8_t r, uint8_t g, uint8_t b)
-{
-    cached_colors.left = CRGB(r, g, b);
-}
-
-void cacheRightColor(uint8_t r, uint8_t g, uint8_t b)
-{
-    cached_colors.right = CRGB(r, g, b);
-}
-
 void handleEvent()
 {
     if (current_event->event_type == SETUP_EVENTS)
@@ -232,14 +205,10 @@ void handleEvent()
             reset_controllers();
             break;
         case SetupEvents::Left_Color:
-            cacheLeftColor(current_event->color.r,
-                           current_event->color.g,
-                           current_event->color.b);
+            cached_colors.left = current_event->color;
             break;
         case SetupEvents::Right_Color:
-            cacheRightColor(current_event->color.r,
-                            current_event->color.g,
-                            current_event->color.b);
+            cached_colors.right = current_event->color;
             break;
         case SetupEvents::Chroma_Event:
             if (current_event->event_value == 1)
@@ -257,12 +226,12 @@ void handleEvent()
     }
     else if (current_event->event_type == SHOW_EVENTS)
     {
-        //handle chroma
+        // if chroma map
         if (chromaMap)
         {
             color_to_use = current_event->color;
         }
-        //default colors
+        // default colors
         else if (current_event->show_name == ShowEvents::Right_Color_Fade ||
                  current_event->show_name == ShowEvents::Right_Color_Flash ||
                  current_event->show_name == ShowEvents::Right_Color_On)
@@ -309,18 +278,6 @@ void handleEvent()
             event_status.flash = 0;
             applyEventToGroup();
             break;
-
-        case ShowEvents::Left_Laser_Speed:
-            leftLaser.laserSpeed = event_value;
-            laser_left_time_update = 151 / leftLaser.laserSpeed;
-
-            break;
-
-        case ShowEvents::Right_Laser_Speed:
-            rightLaser.laserSpeed = event_value;
-            laser_right_time_update = 151 / rightLaser.laserSpeed;
-
-            break;
         default:
             break;
         }
@@ -351,6 +308,28 @@ void applyEventToGroup()
     default:
         break;
     }
+}
+
+/*
+init_lasers();
+case ShowEvents::Left_Laser_Speed:
+    leftLaser.laserSpeed = event_value;
+    laser_left_time_update = 151 / leftLaser.laserSpeed;
+
+    break;
+
+case ShowEvents::Right_Laser_Speed:
+    rightLaser.laserSpeed = event_value;
+    laser_right_time_update = 151 / rightLaser.laserSpeed;
+break;
+void init_lasers()
+{
+    leftLaser.strip_part_index = 1;
+    rightLaser.strip_part_index = 5;
+    laser_left_timer_start = 0;
+    laser_right_timer_start = 0;
+    laser_left_time_update = 151 / leftLaser.laserSpeed;
+    laser_right_time_update = 151 / rightLaser.laserSpeed;
 }
 
 void ledwalkleft(struct Laser *laser)
@@ -414,3 +393,5 @@ void ledwalkright(struct Laser *laser)
         laser_right_timer_start = current_mills_cached;
     }
 }
+
+*/

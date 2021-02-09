@@ -4,9 +4,9 @@
 
 typedef struct StatusLight
 {
-    int fade;
-    int flash;
-    int on;
+    bool fade;
+    bool flash;
+    bool on;
 } t_status;
 
 typedef struct CacheColors
