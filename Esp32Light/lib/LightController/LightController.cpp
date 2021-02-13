@@ -1,7 +1,6 @@
 #include "LightController.hpp"
-
 // -------------------------------------------------- Constructors -------------------------------------------------- //
-LightController::LightController(CRGBSet *leds, size_t from, size_t to)
+LightController::LightController(CRGBSet *leds, int from, int to)
 {
     this->support_array = leds;
     this->from = from;
@@ -14,17 +13,22 @@ LightController::~LightController()
 {
 }
 
-// ------------------------------------------------ Private Methods ------------------------------------------------- //
+// ------------------------------------------------ Protected Methods ------------------------------------------------- //
 void LightController::update_color(CRGB flash_color)
 {
+    if (sameColor(&flash_color, &this->color_flash))
+    {
+        return;
+    }
+
     this->color_changed = true;
 
     this->color_flash.setRGB(flash_color.r,
-                                flash_color.g,
-                                flash_color.b);
+                             flash_color.g,
+                             flash_color.b);
     this->color.setRGB((uint8_t)((float)flash_color.r * BRIGHTNESSDIVIDER),
-                        (uint8_t)((float)flash_color.g * BRIGHTNESSDIVIDER),
-                        (uint8_t)((float)flash_color.b * BRIGHTNESSDIVIDER));
+                       (uint8_t)((float)flash_color.g * BRIGHTNESSDIVIDER),
+                       (uint8_t)((float)flash_color.b * BRIGHTNESSDIVIDER));
 }
 
 void LightController::reset_colors()
@@ -51,9 +55,11 @@ void LightController::update_status(t_status new_status, uint32_t time)
 
     if (new_status.on)
     {
+        // update current status
         this->status = new_status;
         this->have_to_turn_off = false;
-        if (new_status.flash)
+
+        if (this->status.flash)
         {
             this->actual_color = this->color_flash;
         }
@@ -107,17 +113,19 @@ void LightController::compute_actual_color()
     }
     else if (this->status.fade)
     {
-        if(this->current_time - this->last_fade_time > FADE_TIME_MILLIS){
+        if (this->current_time - this->last_fade_time > FADE_TIME_MILLIS)
+        {
             this->fadeLight();
             this->last_fade_time = this->current_time;
         }
     }
     else if (this->status.flash)
     {
-        if(this->current_time - this->last_fade_time > FADE_TIME_MILLIS){
+        if (this->current_time - this->last_fade_time > FLASH_TIME_MILLIS)
+        {
             this->flashLight();
             this->last_fade_time = this->current_time;
-        }            
+        }
     }
 }
 

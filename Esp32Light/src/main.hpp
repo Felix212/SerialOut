@@ -6,9 +6,6 @@
 #include "LightController.hpp"
 #include "LaserController.hpp"
 
-static CRGB defaultColorLEFT = CRGB(255, 0, 0);
-static CRGB defaultColorRIGHT = CRGB(0, 125, 255);
-
 void init_controllers();
 void init_lasers();
 void controlLight();

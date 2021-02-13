@@ -8,9 +8,11 @@ bool chromaMap = false;
 CRGB leds[TOTAL_LEDS];
 CRGBArray<TOTAL_LEDS> support_array;
 
+int n_leds_strips[] = N_LEDS_STRIPS;
+bool reverse_display[] = REVERSE_DISPLAY;
+
 size_t total_controllers = 7;
 LightController *stripeControllers[7];
-LaserController *laserControllers[2];
 
 uint32_t current_mills_cached;
 uint32_t frame_time_start_millis;
@@ -27,18 +29,16 @@ void setup()
 
     parser = new LightToSerialParser();
 
-    cached_colors.left = defaultColorLEFT;
-    cached_colors.right = defaultColorRIGHT;
+    cached_colors.left = DEFAULT_LEFT_COLOR;
+    cached_colors.right = DEFAULT_RIGHT_COLOR;
 
     init_controllers();
 
-    // FastLED.addLeds<LEDTYPE, DATA_PIN, GRB>(leds, NUM_LEDS);
-    FastLED.addLeds<LEDTYPE, PIN_LED_STRIP_1>(leds, 0, TOTAL_LEDS_STRIP_1);
-    FastLED.addLeds<LEDTYPE, PIN_LED_STRIP_2>(leds, TOTAL_LEDS_STRIP_1, TOTAL_LEDS_STRIP_2);
+    addLedsToFastLEDS(leds);
 
-    if (BRIGHTNESS != 255)
+    if (BRIGHTNESS_MAX != 255)
     {
-        FastLED.setBrightness(BRIGHTNESS);
+        FastLED.setBrightness(BRIGHTNESS_MAX);
     }
 
     if (POWERLIMIT != -1)
@@ -67,18 +67,25 @@ void init_controllers()
 
     calculate_led_splits(valuesMinMax);
 
+    // Left Ring
     stripeControllers[0] = new LightController(&support_array, valuesMinMax[0], valuesMinMax[1]);
 
+    // Left Laser
     stripeControllers[1] = new LaserController(&support_array, valuesMinMax[1], valuesMinMax[2], true, 1);
-    laserControllers[0] = (LaserController *)stripeControllers[1];
 
+    // Left Center
     stripeControllers[2] = new LightController(&support_array, valuesMinMax[2], valuesMinMax[3]);
+
+    // BackTop
     stripeControllers[3] = new LightController(&support_array, valuesMinMax[3], valuesMinMax[4]);
+
+    // Right Center
     stripeControllers[4] = new LightController(&support_array, valuesMinMax[4], valuesMinMax[5]);
 
+    // Right Laser
     stripeControllers[5] = new LaserController(&support_array, valuesMinMax[5], valuesMinMax[6], false, 1);
-    laserControllers[1] = (LaserController *)stripeControllers[5];
 
+    // Right Ring
     stripeControllers[6] = new LightController(&support_array, valuesMinMax[6], valuesMinMax[7]);
 }
 
@@ -98,7 +105,7 @@ void loop()
     // Update Leds Controllers
     for (size_t i = 0; i < total_controllers; ++i)
     {
-        if (i == 1 || i == 5)
+        if (i == 1 || i == 5) // lasers
         {
             ((LaserController *)stripeControllers[i])->update(current_mills_cached);
         }
@@ -112,7 +119,7 @@ void loop()
     if (current_mills_cached - frame_time_start_millis > time_between_frame_updates)
     {
         // update leds with current settings
-        update_leds(leds, support_array);
+        update_leds(leds, support_array, n_leds_strips, reverse_display);
 
         // Show updates
         FastLED.show();
@@ -123,7 +130,7 @@ void loop()
 
 void handleEvent()
 {
-    if (current_event->event_type == SETUP_EVENTS)
+    if (current_event->event_type == EventsType::Setup)
     {
         switch (current_event->setup_name)
         {
@@ -154,7 +161,7 @@ void handleEvent()
             break;
         }
     }
-    else if (current_event->event_type == SHOW_EVENTS)
+    else if (current_event->event_type == EventsType::Show)
     {
         // if chroma map
         if (chromaMap)
@@ -209,10 +216,10 @@ void handleEvent()
             applyEventToGroup();
             break;
         case ShowEvents::Left_Laser_Speed:
-            laserControllers[0]->set_speed(current_event->event_value, current_mills_cached);
+            ((LaserController *)stripeControllers[1])->set_speed(current_event->event_value, current_mills_cached);
             break;
         case ShowEvents::Right_Laser_Speed:
-            laserControllers[1]->set_speed(current_event->event_value, current_mills_cached);
+            ((LaserController *)stripeControllers[5])->set_speed(current_event->event_value, current_mills_cached);
             break;
         default:
             break;

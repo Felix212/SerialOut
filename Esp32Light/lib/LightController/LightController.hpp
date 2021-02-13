@@ -1,7 +1,5 @@
 #pragma once
-
-#include "Globals.hpp"
-#include "SupportStructures.hpp"
+#include "Utils.hpp"
 
 class LightController
 {
@@ -11,15 +9,15 @@ protected:
     t_status status;
 
     // begin led index
-    size_t from;
+    int from;
     // to -1 is last led index of this light controller
-    size_t to;
+    int to;
 
     CRGB color;
     CRGB color_flash;
     CRGB actual_color;
     bool color_changed;
-    
+
     // time of when light was turn on
     uint32_t status_start_time;
     uint32_t last_fade_time;
@@ -38,7 +36,7 @@ protected:
     void compute_actual_color();
 
 public:
-    LightController(CRGBSet *, size_t, size_t);
+    LightController(CRGBSet *, int, int);
     ~LightController();
     void update(uint32_t);
     void handle_event(t_status, CRGB, uint32_t);

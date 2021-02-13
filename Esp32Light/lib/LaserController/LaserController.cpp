@@ -1,27 +1,13 @@
 #include "LaserController.hpp"
-
-LaserController::LaserController(CRGBSet *leds, size_t from, size_t to, bool direction, size_t speed) : LightController::LightController(leds, from, to)
+// -------------------------------------------------- Constructors -------------------------------------------------- //
+LaserController::LaserController(CRGBSet *leds, int from, int to, bool direction, int speed) : LightController::LightController(leds, from, to)
 {
     this->direction = direction;
     this->current_offset = 0;
     set_speed(speed, 0);
 }
 
-void LaserController::set_speed(size_t new_speed, uint32_t time)
-{
-    this->last_laser_time = time;
-    if (new_speed == 0)
-    {
-        this->current_offset = 0;
-        this->can_shift = false;
-    }
-    else
-    {
-        time_between_laser_updates = 151 / new_speed;
-        this->can_shift = true;
-    }
-}
-
+// ------------------------------------------------ Private Methods ------------------------------------------------- //
 void LaserController::updateOffset()
 {
     // Apply current color to support vector
@@ -55,6 +41,23 @@ void LaserController::colorLeds()
         {
             (*support_array)[i] = CRGB::Black;
         }
+    }
+}
+
+// ------------------------------------------------- Public Methods ------------------------------------------------- //
+
+void LaserController::set_speed(int new_speed, uint32_t time)
+{
+    this->last_laser_time = time;
+    if (new_speed == 0)
+    {
+        this->current_offset = 0;
+        this->can_shift = false;
+    }
+    else
+    {
+        time_between_laser_updates = 151 / new_speed;
+        this->can_shift = true;
     }
 }
 
