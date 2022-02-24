@@ -4,3 +4,13 @@
 .vscode/launch.json
 .vscode/ipch
 .vscode/settings.json
+
+
+cmake-build-arduino_nano
+cmake-build-debug
+cmake-build-duedev
+cmake-build-env_arduino_uno
+cmake-build-esp32doit-devkit-v1
+
+CMakeLists.txt
+CMakeListsPrivate.txt
